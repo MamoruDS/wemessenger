@@ -2,9 +2,12 @@
   "name": "wemessenger",
   "version": "0.0.1",
   "description": "",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node dist/main.js",
+    "test": "node dist/test.js",
+    "compile": "babel src --out-dir dist",
+    "compile-watch": "babel src --out-dir dist --watch"
   },
   "repository": {
     "type": "git",
@@ -33,6 +36,8 @@
     ]
   },
   "dependencies": {
+    "axios": "^0.18.0",
+    "js-beautify": "^1.8.8",
     "wechaty": "^0.22.4"
   }
 }
