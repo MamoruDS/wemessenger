@@ -24,8 +24,21 @@ const getProfile = () => {
         bots: {},
         contacts: {},
         links: {},
-        rule_contact: {},
-        rule_room: {}
+        rule_personal: {
+            mode: "whitelist",
+            mute_list: [],
+            forward_list: []
+        },
+        rule_public: {
+            mode: "whitelist",
+            mute_list: [],
+            forward_list: []
+        },
+        rule_room: {
+            mode: "whitelist",
+            mute_list: [],
+            forward_list: []
+        }
     }
     return jsonio.readJSON(main.profile_path, profile_default)
 }
@@ -45,25 +58,36 @@ export const setSelf = (wechat_id, telegram_id, bot_id) => {
     setProfile(_profile)
 }
 
-export const setBot = (username, token, enabled) => {
+export const getBot = (bot_id) => {
     let _profile = getProfile()
-    let item = _profile.bots[username] || {}
+    let _bot = _profile.bots[bot_id]
+    return _bot
+}
+
+export const setBot = (bot_id, token, enabled) => {
+    let _profile = getProfile()
+    let item = _profile.bots[bot_id] || {}
     item = objUpdate(item, 'token', token)
     item = objUpdate(item, 'enabled', enabled)
     //TODO: log
-    _profile.bots[username] = item
+    _profile.bots[bot_id] = item
     setProfile(_profile)
 }
 
-export const setContact = (payload_id, temp_id, name, alias, gender, province, signature) => {
+export const getContact = (contact_id) => {
+    let _profile = getProfile()
+    return _profile.contacts[contact_id]
+}
+
+export const setContact = (payload_id, temp_id, name, alias, gender, roomBool, publicBool) => {
     let _profile = getProfile()
     let item = _profile.contacts[payload_id] || {}
     item = objUpdate(item, 'temp_id', temp_id)
     item = objUpdate(item, 'name', name)
     item = objUpdate(item, 'alias', alias)
     item = objUpdate(item, 'gender', gender)
-    item = objUpdate(item, 'province', province)
-    item = objUpdate(item, 'signature', signature)
+    item = objUpdate(item, 'roomBool', roomBool)
+    item = objUpdate(item, 'publicBool', publicBool)
     //TODO: log
     _profile.contacts[payload_id] = item
     setProfile(_profile)
@@ -150,4 +174,9 @@ export const setLinkedBot = (contact_id, bot_id) => {
     let _profile = getProfile()
     _profile.links[contact_id] = bot_id
     setProfile(_profile)
+}
+
+export const getBotByRule = (rule, room_id) => {
+    //TODO: get bot from rule (use switch)
+    return '123'
 }
