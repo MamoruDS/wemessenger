@@ -56,6 +56,32 @@ export const setBot = (username, token, enabled) => {
     setProfile(_profile)
 }
 
+export const searchContact = (filter = {
+    name: undefined,
+    aliasCheck: false,
+    alias: undefined,
+    exact: false
+}) => {
+    let _profile = getProfile()
+    let res = []
+    let contacts = _profile.contacts
+    for (let i in contacts) {
+        let contact = contacts[i]
+        if (filter.name) {
+            if (filter.exact && (contact.name !== filter.name)) continue
+            else if (contact.name.indexOf(filter.name) === -1) continue
+        }
+        if (filter.aliasCheck) {
+            if (filter.exact && (contact.alias !== filter.alias)) continue
+            else if (contact.alias) {
+                if (contact.alias.indexOf(filter.alias) === -1) continue
+            } else if (!contact.alias && filter.alias) continue
+        }
+        res = [...res, contact]
+    }
+    return res
+}
+
 export const setContact = (payload_id, temp_id, name, alias, gender, province, signature) => {
     let _profile = getProfile()
     let item = _profile.contacts[payload_id] || {}
