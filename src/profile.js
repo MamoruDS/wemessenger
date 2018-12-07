@@ -1,4 +1,7 @@
 import * as jsonio from './jsonio'
+import {
+    compare
+} from 'semver';
 // import * as main from './main'
 // TEST ONLY
 let main = {
@@ -53,9 +56,10 @@ export const setBot = (username, token, enabled) => {
     setProfile(_profile)
 }
 
-export const setContact = (payload_id, name, alias, gender, province, signature) => {
+export const setContact = (payload_id, temp_id, name, alias, gender, province, signature) => {
     let _profile = getProfile()
     let item = _profile.contacts[payload_id] || {}
+    item = objUpdate(item, 'temp_id', temp_id)
     item = objUpdate(item, 'name', name)
     item = objUpdate(item, 'alias', alias)
     item = objUpdate(item, 'gender', gender)
@@ -63,5 +67,33 @@ export const setContact = (payload_id, name, alias, gender, province, signature)
     item = objUpdate(item, 'signature', signature)
     //TODO: log
     _profile.contacts[payload_id] = item
+    setProfile(_profile)
+}
+
+export const compareContact = (name1, name2, alias1, alias2) => {
+    if (alias1 === alias2) {
+        if (name1 === name2) return true
+        else {
+            //TODO: add conflit
+            return true
+        }
+    } else {
+        if (name1 === name2) {
+            //TODO: add conflit
+            return true
+        } else {
+            //TODO: add conflit
+            return false
+        }
+    }
+}
+
+export const expireContact = () => {
+    let _profile = getProfile()
+    let contacts = _profile.contacts
+    for (let i in contacts) {
+        contacts[i] = objUpdate(contacts[i], 'temp_id', undefined)
+    }
+    _profile.contacts = contacts
     setProfile(_profile)
 }
