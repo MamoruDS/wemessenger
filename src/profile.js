@@ -45,10 +45,23 @@ export const setSelf = (wechat_id, telegram_id, bot_id) => {
 
 export const setBot = (username, token, enabled) => {
     let _profile = getProfile()
-    let bot = _profile.bots[username] || {}
-    bot = objUpdate(bot, 'token', token)
-    bot = objUpdate(bot, 'enabled', enabled)
-    console.log(bot)
-    _profile.bots[username] = bot
+    let item = _profile.bots[username] || {}
+    item = objUpdate(item, 'token', token)
+    item = objUpdate(item, 'enabled', enabled)
+    //TODO: log
+    _profile.bots[username] = item
+    setProfile(_profile)
+}
+
+export const setContact = (payload_id, name, alias, gender, province, signature) => {
+    let _profile = getProfile()
+    let item = _profile.contacts[payload_id] || {}
+    item = objUpdate(item, 'name', name)
+    item = objUpdate(item, 'alias', alias)
+    item = objUpdate(item, 'gender', gender)
+    item = objUpdate(item, 'province', province)
+    item = objUpdate(item, 'signature', signature)
+    //TODO: log
+    _profile.contacts[payload_id] = item
     setProfile(_profile)
 }
