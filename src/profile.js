@@ -1,10 +1,8 @@
 import * as jsonio from './jsonio'
-import {
-    compare
-} from 'semver';
 // import * as main from './main'
 // TEST ONLY
 let main = {
+    id_mode: 'TEMP',
     profile_path: './profile.json'
 }
 
@@ -25,6 +23,7 @@ const getProfile = () => {
         self: {},
         bots: {},
         contacts: {},
+        links: {},
         rule_contact: {},
         rule_room: {}
     }
@@ -56,6 +55,20 @@ export const setBot = (username, token, enabled) => {
     setProfile(_profile)
 }
 
+export const setContact = (payload_id, temp_id, name, alias, gender, province, signature) => {
+    let _profile = getProfile()
+    let item = _profile.contacts[payload_id] || {}
+    item = objUpdate(item, 'temp_id', temp_id)
+    item = objUpdate(item, 'name', name)
+    item = objUpdate(item, 'alias', alias)
+    item = objUpdate(item, 'gender', gender)
+    item = objUpdate(item, 'province', province)
+    item = objUpdate(item, 'signature', signature)
+    //TODO: log
+    _profile.contacts[payload_id] = item
+    setProfile(_profile)
+}
+
 export const searchContact = (filter = {
     name: undefined,
     aliasCheck: false,
@@ -82,18 +95,18 @@ export const searchContact = (filter = {
     return res
 }
 
-export const setContact = (payload_id, temp_id, name, alias, gender, province, signature) => {
+export const existContact = (wechat_id) => {
     let _profile = getProfile()
-    let item = _profile.contacts[payload_id] || {}
-    item = objUpdate(item, 'temp_id', temp_id)
-    item = objUpdate(item, 'name', name)
-    item = objUpdate(item, 'alias', alias)
-    item = objUpdate(item, 'gender', gender)
-    item = objUpdate(item, 'province', province)
-    item = objUpdate(item, 'signature', signature)
-    //TODO: log
-    _profile.contacts[payload_id] = item
-    setProfile(_profile)
+    let contact_id = undefined
+    let contacts = _profile.contacts
+    if (main.id_mode === 'TEMP') {
+        for (let i in contacts) {
+            if (contacts[i].temp_id === wechat_id) contact_id = i
+        }
+    } else {
+        if (contacts[wechat_id]) contact_id = wechat_id
+    }
+    return contact_id
 }
 
 export const compareContact = (name1, name2, alias1, alias2) => {
@@ -122,4 +135,13 @@ export const expireContacts = () => {
     }
     _profile.contacts = contacts
     setProfile(_profile)
+}
+
+// export const checkContact = (id, name, alias) => {
+
+// }
+
+export const getLinkedBot = (contact_id) => {
+    let _profile = getProfile()
+    return _profile.links[contact_id]
 }
