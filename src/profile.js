@@ -88,7 +88,7 @@ export const compareContact = (name1, name2, alias1, alias2) => {
     }
 }
 
-export const expireContact = () => {
+export const expireContacts = () => {
     let _profile = getProfile()
     let contacts = _profile.contacts
     for (let i in contacts) {
