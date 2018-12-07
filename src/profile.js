@@ -145,3 +145,9 @@ export const getLinkedBot = (contact_id) => {
     let _profile = getProfile()
     return _profile.links[contact_id]
 }
+
+export const setLinkedBot = (contact_id, bot_id) => {
+    let _profile = getProfile()
+    _profile.links[contact_id] = bot_id
+    setProfile(_profile)
+}
