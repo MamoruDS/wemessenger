@@ -2,7 +2,11 @@ import fs from 'fs'
 import beautify from 'js-beautify'
 
 export const readJSON = (json_path) => {
-    return JSON.parse(fs.readFileSync(json_path, 'utf8'))
+    if (fs.existsSync(json_path)){
+        return JSON.parse(fs.readFileSync(json_path, 'utf8'))
+    }
+    writeJSON(json_path, {})
+    return false 
 }
 
 export const writeJSON = (json_path, data, default_data = {}) => {
