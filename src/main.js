@@ -1,3 +1,4 @@
+const TelegramBot = require('node-telegram-bot-api')
 import * as messenger from './messenger'
 import * as colors from 'colors'
 
@@ -9,10 +10,11 @@ const {
 } = require('wechaty')
 
 export const profile_path = './profile.json'
+export const id_mode = 'TEMP'
 
 const bot = new Wechaty({
     puppet: 'wechaty-puppet-puppeteer',
-    profile: 'mamoru'
+    profile: 'mamoruds'
 })
 
 export const messageType = {
