@@ -55,7 +55,7 @@ export const wechatMsgHandle = async (msg) => {
     let text = msg.text()
     let room = msg.room()
 
-    if (checkConflict(msg)) return
+    if (await checkConflict(msg)) return
 
     console.log('\n')
     console.log(JSON.stringify(contact).white)
@@ -181,7 +181,7 @@ tbot.on('message', async (msg) => {
             file = await FileBox.fromBuffer(buffer, `tg_sticker_unique_file_id_${sticker.file_id}.gif`)
             if (mamoru) {
                 mamoru.say(file)
-                // setMsgConflict(mamoru.id, 'text', text)
+                setMsgConflict(mamoru.id, 'sticker', `tg_sticker_unique_file_id_${sticker.file_id}.gif`)
             }
         })
     }
@@ -195,6 +195,8 @@ export const telegramMsgHandle = () => {
 const setMsgConflict = (id, type, content) => {
     if (type === 'text') {
         type = main.messageType.Text
+    } else if (type === 'sticker') {
+        type = main.messageType.Image
     } else {
         type = main.messageType.Text
         content = 'unknown telegram message'
@@ -205,17 +207,21 @@ const setMsgConflict = (id, type, content) => {
     }
 }
 
-const checkConflict = (msg) => {
+const checkConflict = async (msg) => {
     if (msg.self()) {
         let id = (msg.to().id || null) || msg.room().id
         let msgCheck = msgConflict[id]
         msgConflict[id] = undefined
         if (msgCheck) {
             if (msg.type() === msgCheck.type) {
-                if (msg.text() === msgCheck.content) {
-                    return true
-                } else {
-                    console.log('no conflict: ' + 'different content.'.green)
+                //TYPE CHECK
+                let type = msg.type()
+                if (type === main.messageType.Text) {
+                    if (msg.text() === msgCheck.content) {
+                        return true
+                    }
+                } else if (type === main.messageType.Image) {
+                    return await filenameCheck(msg, msgCheck.content)
                 }
             } else {
                 console.log('no conflict: ' + 'different type.'.green)
@@ -225,4 +231,13 @@ const checkConflict = (msg) => {
         }
     }
     return false
+}
+
+const filenameCheck = async (msg, content) => {
+    let file = await msg.toFileBox()
+    if (content === file.name) {
+        return true
+    } else {
+        return false
+    }
 }
