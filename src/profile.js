@@ -64,9 +64,10 @@ export const getBot = (bot_id) => {
     return _bot
 }
 
-export const setBot = (bot_id, token, enabled) => {
+export const setBot = (bot_id, mode, token, enabled) => {
     let _profile = getProfile()
     let item = _profile.bots[bot_id] || {}
+    item = objUpdate(item, 'mode', mode)
     item = objUpdate(item, 'token', token)
     item = objUpdate(item, 'enabled', enabled)
     //TODO: log
@@ -74,20 +75,49 @@ export const setBot = (bot_id, token, enabled) => {
     setProfile(_profile)
 }
 
+export const getDefaultBot = () => {
+    let _profile = getProfile()
+    let bots = _profile.bots
+    let bot = undefined
+    for (let i in bots) {
+        if (bots[i].default) bot = bots[i]
+    }
+    return bot
+}
+
 export const getContact = (contact_id) => {
     let _profile = getProfile()
     return _profile.contacts[contact_id]
 }
 
-export const setContact = (payload_id, temp_id, name, alias, gender, roomBool, publicBool) => {
+export const setContactUser = (payload_id, temp_id, name, alias, bind_tg_id, bind_group_chat, mute, roomBool, publicBool) => {
     let _profile = getProfile()
     let item = _profile.contacts[payload_id] || {}
     item = objUpdate(item, 'temp_id', temp_id)
     item = objUpdate(item, 'name', name)
     item = objUpdate(item, 'alias', alias)
-    item = objUpdate(item, 'gender', gender)
+    item = objUpdate(item, 'bind_tg_id', bind_tg_id)
+    item = objUpdate(item, 'bind_group_chat', bind_group_chat)
+    item = objUpdate(item, 'mute', mute)
     item = objUpdate(item, 'roomBool', roomBool)
     item = objUpdate(item, 'publicBool', publicBool)
+    //TODO: log
+    _profile.contacts[payload_id] = item
+    setProfile(_profile)
+}
+
+export const setContactRoom = (payload_id, temp_id, topic, mode, blacklist, whitelist, bind_group_chat, mention, mute, roomBool) => {
+    let _profile = getProfile()
+    let item = _profile.contacts[payload_id] || {}
+    item = objUpdate(item, 'temp_id', temp_id)
+    item = objUpdate(item, 'topic', topic)
+    item = objUpdate(item, 'mode', mode)
+    item = objUpdate(item, 'blacklist', blacklist)
+    item = objUpdate(item, 'whitelist', whitelist)
+    item = objUpdate(item, 'bind_group_chat', bind_group_chat)
+    item = objUpdate(item, 'mention', mention)
+    item = objUpdate(item, 'mute', mute)
+    item = objUpdate(item, 'roomBool', roomBool)
     //TODO: log
     _profile.contacts[payload_id] = item
     setProfile(_profile)
@@ -165,6 +195,11 @@ export const expireContacts = () => {
 
 // }
 
+export const getLinks = () => {
+    let _profile = getProfile()
+    return _profile.links
+}
+
 export const getLinkedBot = (contact_id) => {
     let _profile = getProfile()
     return _profile.links[contact_id]
@@ -174,9 +209,4 @@ export const setLinkedBot = (contact_id, bot_id) => {
     let _profile = getProfile()
     _profile.links[contact_id] = bot_id
     setProfile(_profile)
-}
-
-export const getBotByRule = (rule, room_id) => {
-    //TODO: get bot from rule (use switch)
-    return '123'
 }
