@@ -1,18 +1,22 @@
 import * as jsonio from './jsonio'
-// import * as main from './main'
-// TEST ONLY
-let main = {
-    id_mode: 'TEMP',
-    profile_path: './profile.json'
+import * as crypto from 'crypto'
+import * as main from './main'
+
+const getUniqueId = (prefix = 'unknown') => {
+    return `${prefix}_${Date.now()}${crypto.randomBytes(4).toString('hex')}`
 }
 
-const objUpdate = (obj, item, value) => {
+const objUpdate = (obj, item, value, default_value) => {
     if (typeof obj === 'object') {
         let value_old = obj[item]
         if (value || value === false) {
             obj[item] = value
         } else {
-            obj[item] = value_old
+            if (default_value || value === false) {
+                obj[item] = default_value
+            } else {
+                obj[item] = value_old
+            }
         }
     }
     return obj
@@ -23,22 +27,7 @@ const getProfile = () => {
         self: {},
         bots: {},
         contacts: {},
-        links: {},
-        rule_personal: {
-            mode: "whitelist",
-            mute_list: [],
-            forward_list: []
-        },
-        rule_public: {
-            mode: "whitelist",
-            mute_list: [],
-            forward_list: []
-        },
-        rule_room: {
-            mode: "whitelist",
-            mute_list: [],
-            forward_list: []
-        }
+        links: {}
     }
     return jsonio.readJSON(main.profile_path, profile_default)
 }
@@ -47,21 +36,42 @@ const setProfile = (profile_data) => {
     jsonio.writeJSON(main.profile_path, profile_data)
 }
 
-export const setSelf = (wechat_id, telegram_id, bot_id) => {
+export const checkSelf = () => {}
+
+export const getSelf = () => {
     let _profile = getProfile()
-    let _self = {
-        wechat_id: wechat_id,
-        telegram_id: telegram_id,
-        bot_id: bot_id
-    }
-    _profile.self = _self
+    return _profile.self
+}
+
+export const setSelf = (info = {
+    wechat_id: undefined,
+    contact_id: undefined,
+    telegram_id: undefined
+}, updateContact = false) => {
+    let _profile = getProfile()
+    let self = _profile.self || {}
+    self = objUpdate(self, 'wechat_id', info.wechat_id)
+    self = objUpdate(self, 'contact_id', info.contact_id, getUniqueId('contact'))
+    self = objUpdate(self, 'telegram_id', info.telegram_id)
+    _profile.self = self
     setProfile(_profile)
+    if (updateContact) {
+        setContactUser(self.contact_id, {
+            temp_id: self.wechat_id,
+            bind_tg_id: self.telegram_id,
+            publicBool: false
+        })
+    }
 }
 
 export const getBot = (bot_id) => {
     let _profile = getProfile()
     let _bot = _profile.bots[bot_id]
     return _bot
+}
+
+export const getBots = () => {
+    return getProfile().bots
 }
 
 export const setBot = (bot_id, mode, token, enabled) => {
@@ -90,19 +100,27 @@ export const getContact = (contact_id) => {
     return _profile.contacts[contact_id]
 }
 
-export const setContactUser = (payload_id, temp_id, name, alias, bind_tg_id, bind_group_chat, mute, roomBool, publicBool) => {
+export const setContactUser = (contact_id, info = {
+    temp_id: undefined,
+    name: undefined,
+    alias: undefined,
+    bind_tg_id: undefined,
+    bind_group_chat: undefined,
+    mute: undefined,
+    publicBool: undefined
+}) => {
     let _profile = getProfile()
-    let item = _profile.contacts[payload_id] || {}
-    item = objUpdate(item, 'temp_id', temp_id)
-    item = objUpdate(item, 'name', name)
-    item = objUpdate(item, 'alias', alias)
-    item = objUpdate(item, 'bind_tg_id', bind_tg_id)
-    item = objUpdate(item, 'bind_group_chat', bind_group_chat)
-    item = objUpdate(item, 'mute', mute)
-    item = objUpdate(item, 'roomBool', roomBool)
-    item = objUpdate(item, 'publicBool', publicBool)
+    let item = _profile.contacts[contact_id] || {}
+    item = objUpdate(item, 'temp_id', info.temp_id)
+    item = objUpdate(item, 'name', info.name)
+    item = objUpdate(item, 'alias', info.alias)
+    item = objUpdate(item, 'bind_tg_id', info.bind_tg_id)
+    item = objUpdate(item, 'bind_group_chat', info.bind_group_chat)
+    item = objUpdate(item, 'mute', info.mute)
+    item = objUpdate(item, 'roomBool', false)
+    item = objUpdate(item, 'publicBool', info.publicBool)
     //TODO: log
-    _profile.contacts[payload_id] = item
+    _profile.contacts[contact_id] = item
     setProfile(_profile)
 }
 
@@ -144,7 +162,7 @@ export const searchContact = (filter = {
                 if (contact.alias.indexOf(filter.alias) === -1) continue
             } else if (!contact.alias && filter.alias) continue
         }
-        res = [...res, contact]
+        res = [...res, i]
     }
     return res
 }
@@ -191,9 +209,29 @@ export const expireContacts = () => {
     setProfile(_profile)
 }
 
-// export const checkContact = (id, name, alias) => {
-
-// }
+export const checkLocalContact = (wechat_id, name, alias) => {
+    if (main.id_mode === 'TEMP') {
+        let contact_id = existContact(wechat_id)
+        if (contact_id) {
+            return contact_id
+        } else {
+            let local_contact = searchContact({
+                name: name,
+                aliasCheck: true,
+                alias: alias,
+                exact: true
+            })
+            if (local_contact) {
+                return local_contact[0]
+            } else {
+                return false
+            }
+        }
+    } else {
+        //TODO: if not TEMP id
+        return false
+    }
+}
 
 export const getLinks = () => {
     let _profile = getProfile()
