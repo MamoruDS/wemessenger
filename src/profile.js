@@ -6,13 +6,13 @@ const getUniqueId = (prefix = 'unknown') => {
     return `${prefix}_${Date.now()}${crypto.randomBytes(4).toString('hex')}`
 }
 
-const objUpdate = (obj, item, value, default_value) => {
+export const objUpdate = (obj, item, value, default_value) => {
     if (typeof obj === 'object') {
         let value_old = obj[item]
         if (value || value === false) {
             obj[item] = value
         } else {
-            if (default_value || value === false) {
+            if (obj[item] === undefined) {
                 obj[item] = default_value
             } else {
                 obj[item] = value_old
@@ -145,6 +145,8 @@ export const searchContact = (filter = {
     name: undefined,
     aliasCheck: false,
     alias: undefined,
+    topic: undefined,
+    members: [],
     exact: false
 }) => {
     let _profile = getProfile()
@@ -161,6 +163,11 @@ export const searchContact = (filter = {
             else if (contact.alias) {
                 if (contact.alias.indexOf(filter.alias) === -1) continue
             } else if (!contact.alias && filter.alias) continue
+        }
+        if (filter.topic) {
+            if (filter.exact && (contact.topic !== filter.topic)) continue
+            else if (contact.topic.indexOf(filter.topic) === -1) continue
+            // TODO: check members
         }
         res = [...res, i]
     }
@@ -209,17 +216,24 @@ export const expireContacts = () => {
     setProfile(_profile)
 }
 
-export const checkLocalContact = (wechat_id, name, alias) => {
+export const checkLocalContact = (wechat_id, info = {
+    name: undefined,
+    alias: undefined,
+    topic: undefined,
+    members: []
+}) => {
     if (main.id_mode === 'TEMP') {
         let contact_id = existContact(wechat_id)
         if (contact_id) {
             return contact_id
         } else {
             let local_contact = searchContact({
-                name: name,
+                name: info.name,
                 aliasCheck: true,
-                alias: alias,
-                exact: true
+                alias: info.alias,
+                topic: info.topic,
+                members: info.members,
+                exact: true,
             })
             if (local_contact) {
                 return local_contact[0]
@@ -228,7 +242,7 @@ export const checkLocalContact = (wechat_id, name, alias) => {
             }
         }
     } else {
-        //TODO: if not TEMP id
+        // TODO: if not TEMP id
         return false
     }
 }
