@@ -124,20 +124,29 @@ export const setContactUser = (contact_id, info = {
     setProfile(_profile)
 }
 
-export const setContactRoom = (payload_id, temp_id, topic, mode, blacklist, whitelist, bind_group_chat, mention, mute, roomBool) => {
+export const setContactRoom = (contact_id, info = {
+    temp_id: undefined,
+    topic: undefined,
+    mode: undefined,
+    blacklist: undefined,
+    whitelist: undefined,
+    bind_group_chat: undefined,
+    mention: undefined,
+    mute: undefined
+}) => {
     let _profile = getProfile()
-    let item = _profile.contacts[payload_id] || {}
-    item = objUpdate(item, 'temp_id', temp_id)
-    item = objUpdate(item, 'topic', topic)
-    item = objUpdate(item, 'mode', mode)
-    item = objUpdate(item, 'blacklist', blacklist)
-    item = objUpdate(item, 'whitelist', whitelist)
-    item = objUpdate(item, 'bind_group_chat', bind_group_chat)
-    item = objUpdate(item, 'mention', mention)
-    item = objUpdate(item, 'mute', mute)
-    item = objUpdate(item, 'roomBool', roomBool)
+    let item = _profile.contacts[contact_id] || {}
+    item = objUpdate(item, 'temp_id', info.temp_id)
+    item = objUpdate(item, 'topic', info.topic)
+    item = objUpdate(item, 'mode', info.mode)
+    item = objUpdate(item, 'blacklist', info.blacklist)
+    item = objUpdate(item, 'whitelist', info.whitelist)
+    item = objUpdate(item, 'bind_group_chat', info.bind_group_chat)
+    item = objUpdate(item, 'mention', info.mention)
+    item = objUpdate(item, 'mute', info.mute)
+    item = objUpdate(item, 'roomBool', true)
     //TODO: log
-    _profile.contacts[payload_id] = item
+    _profile.contacts[contact_id] = item
     setProfile(_profile)
 }
 
