@@ -155,7 +155,7 @@ export const searchContact = (filter = {
     aliasCheck: false,
     alias: undefined,
     topic: undefined,
-    members: [],
+    members: undefined,
     exact: false
 }) => {
     let _profile = getProfile()
@@ -178,7 +178,8 @@ export const searchContact = (filter = {
             else if (contact.topic.indexOf(filter.topic) === -1) continue
             // TODO: check members
         }
-        res = [...res, i]
+        if (!filter.name && !filter.alias && !filter.topic && !filter.members) continue
+            res = [...res, i]
     }
     return res
 }
@@ -229,7 +230,7 @@ export const checkLocalContact = (wechat_id, info = {
     name: undefined,
     alias: undefined,
     topic: undefined,
-    members: []
+    members: undefined
 }) => {
     if (main.id_mode === 'TEMP') {
         let contact_id = existContact(wechat_id)
