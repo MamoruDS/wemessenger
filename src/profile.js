@@ -111,6 +111,7 @@ export const setContactUser = (contact_id, info = {
 }) => {
     let _profile = getProfile()
     let item = _profile.contacts[contact_id] || {}
+    if (!contact_id) contact_id = getUniqueId('contact')
     item = objUpdate(item, 'temp_id', info.temp_id)
     item = objUpdate(item, 'name', info.name)
     item = objUpdate(item, 'alias', info.alias)
@@ -122,6 +123,7 @@ export const setContactUser = (contact_id, info = {
     //TODO: log
     _profile.contacts[contact_id] = item
     setProfile(_profile)
+    return contact_id
 }
 
 export const setContactRoom = (contact_id, info = {
@@ -136,6 +138,7 @@ export const setContactRoom = (contact_id, info = {
 }) => {
     let _profile = getProfile()
     let item = _profile.contacts[contact_id] || {}
+    if (!contact_id) contact_id = getUniqueId('room')
     item = objUpdate(item, 'temp_id', info.temp_id)
     item = objUpdate(item, 'topic', info.topic)
     item = objUpdate(item, 'mode', info.mode)
@@ -148,6 +151,7 @@ export const setContactRoom = (contact_id, info = {
     //TODO: log
     _profile.contacts[contact_id] = item
     setProfile(_profile)
+    return contact_id
 }
 
 export const searchContact = (filter = {
@@ -179,7 +183,7 @@ export const searchContact = (filter = {
             // TODO: check members
         }
         if (!filter.name && !filter.alias && !filter.topic && !filter.members) continue
-            res = [...res, i]
+        res = [...res, i]
     }
     return res
 }
@@ -231,7 +235,7 @@ export const checkLocalContact = (wechat_id, info = {
     alias: undefined,
     topic: undefined,
     members: undefined
-}) => {
+}, update_temp_id = false) => {
     if (main.id_mode === 'TEMP') {
         let contact_id = existContact(wechat_id)
         if (contact_id) {
@@ -246,7 +250,13 @@ export const checkLocalContact = (wechat_id, info = {
                 exact: true,
             })
             if (local_contact) {
-                return local_contact[0]
+                let contact_id = local_contact[0]
+                if (update_temp_id && contact_id) {
+                    setContactRoom(contact_id, {
+                        temp_id: wechat_id
+                    })
+                }
+                return contact_id
             } else {
                 return false
             }
