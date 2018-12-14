@@ -74,12 +74,11 @@ export const getBots = () => {
     return getProfile().bots
 }
 
-export const setBot = (botId, mode, token, enabled) => {
+export const setBot = (botId, mode, token) => {
     let _profile = getProfile()
     let bot = _profile.bots[botId] || {}
     bot = objUpdate(bot, 'mode', mode)
     bot = objUpdate(bot, 'token', token)
-    bot = objUpdate(bot, 'enabled', enabled)
     //TODO: log
     _profile.bots[botId] = bot
     setProfile(_profile)
@@ -90,7 +89,7 @@ export const getDefaultBot = () => {
     let bots = _profile.bots
     let bot = undefined
     for (let i in bots) {
-        if (bots[i].default) bot = bots[i]
+        if (bots[i].isDefault) bot = bots[i]
     }
     return bot
 }
