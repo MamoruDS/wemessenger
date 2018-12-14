@@ -6,16 +6,16 @@ const getUniqueId = (prefix = 'unknown') => {
     return `${prefix}_${Date.now()}${crypto.randomBytes(4).toString('hex')}`
 }
 
-export const objUpdate = (obj, item, value, default_value) => {
+export const objUpdate = (obj, item, value, defaultValue) => {
     if (typeof obj === 'object') {
-        let value_old = obj[item]
+        let oldValue = obj[item]
         if (value || value === false) {
             obj[item] = value
         } else {
             if (obj[item] === undefined) {
-                obj[item] = default_value
+                obj[item] = defaultValue
             } else {
-                obj[item] = value_old
+                obj[item] = oldValue
             }
         }
     }
@@ -23,17 +23,17 @@ export const objUpdate = (obj, item, value, default_value) => {
 }
 
 const getProfile = () => {
-    let profile_default = {
+    let defaultProfile = {
         self: {},
         bots: {},
         contacts: {},
         links: {}
     }
-    return jsonio.readJSON(main.profile_path, profile_default)
+    return jsonio.readJSON(main.profilePath, defaultProfile)
 }
 
-const setProfile = (profile_data) => {
-    jsonio.writeJSON(main.profile_path, profile_data)
+const setProfile = (profileObj) => {
+    jsonio.writeJSON(main.profilePath, profileObj)
 }
 
 export const checkSelf = () => {}
@@ -44,44 +44,44 @@ export const getSelf = () => {
 }
 
 export const setSelf = (info = {
-    wechat_id: undefined,
-    contact_id: undefined,
-    telegram_id: undefined
+    wechatId: undefined,
+    contactId: undefined,
+    telegramId: undefined
 }, updateContact = false) => {
     let _profile = getProfile()
     let self = _profile.self || {}
-    self = objUpdate(self, 'wechat_id', info.wechat_id)
-    self = objUpdate(self, 'contact_id', info.contact_id, getUniqueId('contact'))
-    self = objUpdate(self, 'telegram_id', info.telegram_id)
+    self = objUpdate(self, 'wechatId', info.wechatId)
+    self = objUpdate(self, 'contactId', info.contactId, getUniqueId('contact'))
+    self = objUpdate(self, 'telegramId', info.telegramId)
     _profile.self = self
     setProfile(_profile)
     if (updateContact) {
-        setContactUser(self.contact_id, {
-            temp_id: self.wechat_id,
-            bind_tg_id: self.telegram_id,
+        setContactUser(self.contactId, {
+            tempId: self.wechatId,
+            bindTelegramId: self.telegramId,
             publicBool: false
         })
     }
 }
 
-export const getBot = (bot_id) => {
+export const getBot = (botId) => {
     let _profile = getProfile()
-    let _bot = _profile.bots[bot_id]
-    return _bot
+    let bot = _profile.bots[botId]
+    return bot
 }
 
 export const getBots = () => {
     return getProfile().bots
 }
 
-export const setBot = (bot_id, mode, token, enabled) => {
+export const setBot = (botId, mode, token, enabled) => {
     let _profile = getProfile()
-    let item = _profile.bots[bot_id] || {}
-    item = objUpdate(item, 'mode', mode)
-    item = objUpdate(item, 'token', token)
-    item = objUpdate(item, 'enabled', enabled)
+    let bot = _profile.bots[botId] || {}
+    bot = objUpdate(bot, 'mode', mode)
+    bot = objUpdate(bot, 'token', token)
+    bot = objUpdate(bot, 'enabled', enabled)
     //TODO: log
-    _profile.bots[bot_id] = item
+    _profile.bots[botId] = bot
     setProfile(_profile)
 }
 
@@ -95,63 +95,63 @@ export const getDefaultBot = () => {
     return bot
 }
 
-export const getContact = (contact_id) => {
+export const getContact = (contactId) => {
     let _profile = getProfile()
-    return _profile.contacts[contact_id]
+    return _profile.contacts[contactId]
 }
 
-export const setContactUser = (contact_id, info = {
-    temp_id: undefined,
+export const setContactUser = (contactId, info = {
+    tempId: undefined,
     name: undefined,
     alias: undefined,
-    bind_tg_id: undefined,
-    bind_group_chat: undefined,
+    bindTelegramId: undefined,
+    bindChatId: undefined,
     mute: undefined,
     publicBool: undefined
 }) => {
     let _profile = getProfile()
-    let item = _profile.contacts[contact_id] || {}
-    if (!contact_id) contact_id = getUniqueId('contact')
-    item = objUpdate(item, 'temp_id', info.temp_id)
+    let item = _profile.contacts[contactId] || {}
+    if (!contactId) contactId = getUniqueId('contact')
+    item = objUpdate(item, 'tempId', info.tempId)
     item = objUpdate(item, 'name', info.name)
     item = objUpdate(item, 'alias', info.alias)
-    item = objUpdate(item, 'bind_tg_id', info.bind_tg_id)
-    item = objUpdate(item, 'bind_group_chat', info.bind_group_chat)
+    item = objUpdate(item, 'bindTelegramId', info.bindTelegramId)
+    item = objUpdate(item, 'bindChatId', info.bindChatId)
     item = objUpdate(item, 'mute', info.mute)
     item = objUpdate(item, 'roomBool', false)
     item = objUpdate(item, 'publicBool', info.publicBool)
     //TODO: log
-    _profile.contacts[contact_id] = item
+    _profile.contacts[contactId] = item
     setProfile(_profile)
-    return contact_id
+    return contactId
 }
 
-export const setContactRoom = (contact_id, info = {
-    temp_id: undefined,
+export const setContactRoom = (contactId, info = {
+    tempId: undefined,
     topic: undefined,
     mode: undefined,
     blacklist: undefined,
     whitelist: undefined,
-    bind_group_chat: undefined,
+    bindChatId: undefined,
     mention: undefined,
     mute: undefined
 }) => {
     let _profile = getProfile()
-    let item = _profile.contacts[contact_id] || {}
-    if (!contact_id) contact_id = getUniqueId('room')
-    item = objUpdate(item, 'temp_id', info.temp_id)
+    let item = _profile.contacts[contactId] || {}
+    if (!contactId) contactId = getUniqueId('room')
+    item = objUpdate(item, 'tempId', info.tempId)
     item = objUpdate(item, 'topic', info.topic)
     item = objUpdate(item, 'mode', info.mode)
     item = objUpdate(item, 'blacklist', info.blacklist)
     item = objUpdate(item, 'whitelist', info.whitelist)
-    item = objUpdate(item, 'bind_group_chat', info.bind_group_chat)
+    item = objUpdate(item, 'bindChatId', info.bindChatId)
     item = objUpdate(item, 'mention', info.mention)
     item = objUpdate(item, 'mute', info.mute)
     item = objUpdate(item, 'roomBool', true)
     //TODO: log
-    _profile.contacts[contact_id] = item
+    _profile.contacts[contactId] = item
     setProfile(_profile)
-    return contact_id
+    return contactId
 }
 
 export const searchContact = (filter = {
@@ -188,18 +188,18 @@ export const searchContact = (filter = {
     return res
 }
 
-export const existContact = (wechat_id) => {
+export const existContact = (wechatId) => {
     let _profile = getProfile()
-    let contact_id = undefined
+    let contactId = undefined
     let contacts = _profile.contacts
-    if (main.id_mode === 'TEMP') {
+    if (main.isTempId) {
         for (let i in contacts) {
-            if (contacts[i].temp_id === wechat_id) contact_id = i
+            if (contacts[i].tempId === wechatId) contactId = i
         }
     } else {
-        if (contacts[wechat_id]) contact_id = wechat_id
+        if (contacts[wechatId]) contactId = wechatId
     }
-    return contact_id
+    return contactId
 }
 
 export const compareContact = (name1, name2, alias1, alias2) => {
@@ -224,24 +224,24 @@ export const expireContacts = () => {
     let _profile = getProfile()
     let contacts = _profile.contacts
     for (let i in contacts) {
-        contacts[i] = objUpdate(contacts[i], 'temp_id', undefined)
+        contacts[i] = objUpdate(contacts[i], 'tempId', undefined)
     }
     _profile.contacts = contacts
     setProfile(_profile)
 }
 
-export const checkLocalContact = (wechat_id, info = {
+export const checkLocalContact = (wechatId, info = {
     name: undefined,
     alias: undefined,
     topic: undefined,
     members: undefined
-}, update_temp_id = false) => {
-    if (main.id_mode === 'TEMP') {
-        let contact_id = existContact(wechat_id)
-        if (contact_id) {
-            return contact_id
+}, updateTempId = false) => {
+    if (main.isTempId) {
+        let contactId = existContact(wechatId)
+        if (contactId) {
+            return contactId
         } else {
-            let local_contact = searchContact({
+            let localContact = searchContact({
                 name: info.name,
                 aliasCheck: true,
                 alias: info.alias,
@@ -249,14 +249,14 @@ export const checkLocalContact = (wechat_id, info = {
                 members: info.members,
                 exact: true,
             })
-            if (local_contact) {
-                let contact_id = local_contact[0]
-                if (update_temp_id && contact_id) {
-                    setContactRoom(contact_id, {
-                        temp_id: wechat_id
+            if (localContact) {
+                let contactId = localContact[0]
+                if (updateTempId && contactId) {
+                    setContactRoom(contactId, {
+                        tempId: wechatId
                     })
                 }
-                return contact_id
+                return contactId
             } else {
                 return false
             }
@@ -272,13 +272,13 @@ export const getLinks = () => {
     return _profile.links
 }
 
-export const getLinkedBot = (contact_id) => {
+export const getLinkedBot = (contactId) => {
     let _profile = getProfile()
-    return _profile.links[contact_id]
+    return _profile.links[contactId]
 }
 
-export const setLinkedBot = (contact_id, bot_id) => {
+export const setLinkedBot = (contactId, botId) => {
     let _profile = getProfile()
-    _profile.links[contact_id] = bot_id
+    _profile.links[contactId] = botId
     setProfile(_profile)
 }
