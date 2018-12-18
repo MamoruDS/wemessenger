@@ -34,14 +34,16 @@ const initBots = () => {
 
 const spawnBot = (botId) => {
     const info = profile.getBot(botId)
-    const bot = fork('./bot.js', [info.token])
-    bot.on('message', (msg) => {
-        // TODO: receive message from telegram bot
-    })
-    bot.on('exit', () => {
-        telegramBots[botId] = undefined
-    })
-    return bot
+    if (info.token) {
+        const bot = fork('./bot.js', [info.token])
+        bot.on('message', (msg) => {
+            // TODO: receive message from telegram bot
+        })
+        bot.on('exit', () => {
+            telegramBots[botId] = 'shutdown'
+        })
+        return bot
+    }
 }
 
 const killBot = (botId) => {
@@ -50,6 +52,41 @@ const killBot = (botId) => {
         bot.kill()
     } else {
         // console.error('bot not exist')
+    }
+}
+
+const commandBot = (botId, chatId, dataInfo = {
+    msgData: undefined,
+    msgType: undefined
+}) => {
+    const bot = telegramBots[botId]
+    if (bot) {
+        let msg = {
+            chatId: chatId,
+            msgData: undefined,
+            msgType: undefined,
+            isBuffer: false
+        }
+        if (Buffer.isBuffer(dataInfo.msgData)) {
+            msg.msgData = JSON.parse(JSON.stringify(dataInfo.msgData)).data
+            msg.isBuffer = true
+        } else if (typeof dataInfo.msgData == 'string') {
+            msg.msgData = dataInfo.msgData
+        } else {
+            return
+        }
+        const typeSet = ['message', 'photo', 'audio', 'document', 'sticker', 'video', 'videoNote', 'location']
+        if (typeSet.indexOf(dataInfo.msgType) !== -1) {
+            msg.msgType = dataInfo.msgType
+        } else {
+            return
+        }
+        if (bot === 'shutdown') {
+            // TODO: if shutdown?
+            return
+        }
+        // bot.send(JSON.stringify(msg))
+        bot.send(msg)
     }
 }
 
