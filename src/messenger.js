@@ -23,54 +23,50 @@ let msgConflict = {
 
 }
 
-const getTgBot = (contact_id, room_id) => {
-    let contact = profile.getContact(contact_id)
-    let bot_id = profile.getLinkedBot(contact_id)
-    if (!bot_id) {
+const getTgBot = (contactId, roomId) => {
+    let contact = profile.getContact(contactId)
+    let botId = profile.getLinkedBot(contactId)
+    if (!botId) {
         if (contact.publicBool) {
-            bot_id = profile.getBotByRule('public')
+            botId = profile.getBotByRule('public')
         } else if (contact.roomBool) {
-            bot_id = profile.getBotByRule('room', room_id)
+            botId = profile.getBotByRule('room', roomId)
         } else {
-            bot_id = profile.getBotByRule('personal')
+            botId = profile.getBotByRule('personal')
         }
     }
-    return bot_id
+    return botId
 }
 
-export const tgMessenger = (contact_id, room_id) => {
-    let bot_id = getTgBot(contact_id, room_id)
-    let bot = profile.getBot(bot_id)
+export const tgMessenger = (contactId, roomId) => {
+    let botId = getTgBot(contactId, roomId)
+    let bot = profile.getBot(botId)
 
     if (bot) {
-        if (bot.enabled) {
-            // let tgBot = new TelegramBot(bot.token, {
-            // polling: false
-            // })
-        }
+        // do something
     }
 }
 
 export const wechatMsgHandle = async (msg) => {
     let text = msg.text()
-    if (await checkConflict(msg)) return
+        if (await checkConflict(msg)) return
 
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
         // console.log('MessageType: ' + 'Attachment'.red)
         console.log(text)
-        let text_test = format.decodeHTML(text)
-        let url = text_test
+        let textDecode = format.decodeHTML(text)
+        let url = textDecode
             .replace(/(.*?\<url\>)/, '')
             .replace(/(\<\/url\>.*)/, '')
         if (url) {
-            tbot.sendMessage(tgUser, format.parseWechatURL(text), {
+            messenger.sendMessage(tgUser, format.parseWechatURL(text), {
                 parse_mode: 'HTML'
             })
         } else {
             let file = await msg.toFileBox()
             let stream = await file.toStream()
-            tbot.sendDocument(tgUser, stream, {}, {
+            messenger.sendDocument(tgUser, stream, {}, {
                 filename: file.name,
                 contentType: 'application/octet-stream'
             })
@@ -80,7 +76,7 @@ export const wechatMsgHandle = async (msg) => {
         // TODO: show sound wave on telegram macos/android/ios
         let file = await msg.toFileBox()
         let stream = await file.toStream()
-        tbot.sendVoice(tgUser, stream)
+        messenger.sendVoice(tgUser, stream)
     } else if (msg.type() === main.messageType.Contact) {
         // unknown type of message
         console.log('MessageType: ' + 'Contact'.red)
@@ -93,22 +89,22 @@ export const wechatMsgHandle = async (msg) => {
         let buf = await file.toBuffer()
         if (/\.gif$/.test(file.name)) {
             if (/(tg_sticker_unique_file_id_.*?)/.test(file.name)) {
-                let sticker_file_id = file.name
-                sticker_file_id = sticker_file_id.replace(/(tg_sticker_unique_file_id_.*?)/g, '')
-                sticker_file_id = sticker_file_id.replace(/\.gif$/g, '')
-                tbot.sendSticker(tgUser, sticker_file_id)
+                let stickerFileId = file.name
+                stickerFileId = stickerFileId.replace(/(tg_sticker_unique_file_id_.*?)/g, '')
+                stickerFileId = stickerFileId.replace(/\.gif$/g, '')
+                messenger.sendSticker(tgUser, stickerFileId)
             } else {
                 let image = gm(buf, file.name)
-                let tmp_name = Date.now().toString()
+                let tempame = Date.now().toString()
                 image.identify(async (err, info) => {
                     if (!info.Scene) {
                         console.log('MessageType: ' + 'Image-gif-sticker'.red)
-                        image.setFormat('WebP').write(`tmp/${tmp_name}.webp`, async (err) => {
+                        image.setFormat('WebP').write(`tmp/${tempame}.webp`, async (err) => {
                             if (err) {
                                 console.log(err)
                             }
-                            tbot.sendDocument(tgUser, `tmp/${tmp_name}.webp`)
-                            fs.unlinkSync(`tmp/${tmp_name}.webp`)
+                            messenger.sendDocument(tgUser, `tmp/${tempame}.webp`)
+                            fs.unlinkSync(`tmp/${tempame}.webp`)
                         })
                     } else {
                         console.log('MessageType: ' + 'Image-gif-gif'.red)
@@ -119,10 +115,10 @@ export const wechatMsgHandle = async (msg) => {
                         //         if (err) {
                         //             console.log('[ERR]'.red + err)
                         //         } else {
-                        //             tbot.sendDocument(tgUser, buffer)
+                        //             messenger.sendDocument(tgUser, buffer)
                         //         }
                         //     })
-                        tbot.sendDocument(tgUser, buf, {}, {
+                        messenger.sendDocument(tgUser, buf, {}, {
                             filename: file.name
                         })
                     }
@@ -131,28 +127,28 @@ export const wechatMsgHandle = async (msg) => {
         } else {
             console.log('MessageType: ' + 'Image-photo'.red)
             let stream = await file.toStream()
-            tbot.sendPhoto(tgUser, stream)
+            messenger.sendPhoto(tgUser, stream)
         }
     } else if (msg.type() === main.messageType.Text) {
         // text message
         console.log('MessageType: ' + 'Text'.red)
-        tbot.sendMessage(tgUser, text)
+        messenger.sendMessage(tgUser, text)
     } else if (msg.type() === main.messageType.Video) {
         // video message
         console.log('MessageType: ' + 'Video'.red)
         let file = await msg.toFileBox()
         let buf = await alternative.wechatVideoBuffer(file)
-        tbot.sendVideo(tgUser, buf)
+        messenger.sendVideo(tgUser, buf)
     } else if (msg.type() === main.messageType.Url) {
         // unknown type of message
         console.log('MessageType: ' + 'Url'.red)
-        tbot.sendMessage(tgUser, format.parseWechatURL(text), {
+        messenger.sendMessage(tgUser, format.parseWechatURL(text), {
             parse_mode: 'HTML'
         })
     } else {
         // unknown type of message
         console.log('MessageType: ' + 'Other'.red)
-        // tbot.sendMessage(tgUser, text)
+        // messenger.sendMessage(tgUser, text)
         console.log(msg)
     }
 }
@@ -170,8 +166,8 @@ tbot.on('message', async (msg) => {
         }
         let sticker = msg.sticker
         if (sticker) {
-            let file_link = await tbot.getFileLink(sticker.file_id)
-            let file = await FileBox.fromUrl(file_link)
+            let fileLink = await tbot.getFileLink(sticker.file_id)
+            let file = await FileBox.fromUrl(fileLink)
             let buf = await file.toBuffer()
             gm(buf).toBuffer('gif', async (err, buffer) => {
                 if (err) console.error(err)
@@ -180,20 +176,31 @@ tbot.on('message', async (msg) => {
                 setMsgConflict(wcUser.id, 'sticker', `tg_sticker_unique_file_id_${sticker.file_id}.gif`)
             })
         }
+        let photo = msg.photo
+        if (photo) {
+            if (photo.length) {
+                photo = photo[photo.length - 1]
+            }
+            let photoName = `photo_${Date.now()}.jpg`
+            let fileLink = await tbot.getFileLink(photo.file_id)
+            let file = await FileBox.fromUrl(fileLink, photoName)
+            wcUser.say(file)
+            setMsgConflict(wcUser.id, 'photo', photoName)
+        }
         let animation = msg.animation
         if (animation) {
-            let file_link = await tbot.getFileLink(animation.file_id)
-            let file = await FileBox.fromUrl(file_link, animation.file_name)
+            let fileLink = await tbot.getFileLink(animation.file_id)
+            let file = await FileBox.fromUrl(fileLink, animation.file_name)
             wcUser.say(file)
             file.toFile('tmp/' + animation.file_name)
-            setMsgConflict(wcUser.id, 'gif', animation.file_name)
+            // setMsgConflict(wcUser.id, 'gif', animation.file_name)
         }
         let video_note = msg.video_note
         if (video_note) {
             // TODO: file & video sending issue
-            // let file_link = await tbot.getFileLink(video_note.file_id)
-            // console.log(file_link)
-            // let file = await FileBox.fromUrl(file_link)
+            // let fileLink = await tbot.getFileLink(video_note.file_id)
+            // console.log(fileLink)
+            // let file = await FileBox.fromUrl(fileLink)
             // // let buf = await file.toBuffer()
             // wcUser.say(file)
             // // file.toFile('tmp/' + video_note.file_name)
@@ -217,6 +224,8 @@ const setMsgConflict = (id, type, content) => {
         type = main.messageType.Image
     } else if (type === 'gif') {
         type = main.messageType.Video
+    } else if (type === 'photo') {
+        type = main.messageType.Image
     } else if (type === 'audio') {
         type = main.messageType.Attachment
     } else {
@@ -229,15 +238,26 @@ const setMsgConflict = (id, type, content) => {
     }
 }
 
-const checkConflict = async (msg) => {
+const checkConflict = async (msg, log = false) => {
     if (msg.self()) {
         let id = (msg.to().id || null) || msg.room().id
         let msgCheck = msgConflict[id]
         msgConflict[id] = undefined
         if (msgCheck) {
-            if (msg.type() === msgCheck.type) {
+            let type = msg.type()
+            if (log) {
+                const _file = await msg.toFileBox()
+                const _check = {
+                    type: type,
+                    content: _file.name
+                }
+                console.log('[stored]'.white)
+                console.log(msgCheck)
+                console.log('[received]'.white)
+                console.log(_check)
+            }
+            if (type === msgCheck.type) {
                 //TYPE CHECK
-                let type = msg.type()
                 if (type === main.messageType.Text) {
                     if (msg.text() === msgCheck.content) {
                         return true
@@ -248,12 +268,14 @@ const checkConflict = async (msg) => {
                     return await filenameCheck(msg, msgCheck.content)
                 } else if (type === main.messageType.Attachment) {
                     return await filenameCheck(msg, msgCheck.content)
+                } else {
+                    // console.log('no conflict: ' + 'different content.'.green)
                 }
             } else {
-                console.log('no conflict: ' + 'different type.'.green)
+                // console.log('no conflict: ' + 'different type.'.green)
             }
         } else {
-            console.log('no conflict: ' + 'null exist.'.white)
+            // console.log('no conflict: ' + 'null exist.'.white)
         }
     }
     return false
