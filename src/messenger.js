@@ -6,6 +6,9 @@ import * as testProfile from './test_profile'
 import * as alternative from './alternative'
 import * as fs from 'fs'
 import {
+    fork
+} from 'child_process'
+import {
     FileBox
 } from 'file-box'
 const gm = require('gm').subClass({
@@ -19,11 +22,39 @@ const tbot = new TelegramBot(token, {
     polling: true
 })
 
-let msgConflict = {
+let msgConflict = {}
+let telegramBots = {}
 
+const initBots = () => {
+    const bots = profile.getBots()
+    for (let botId in bots) {
+        telegramBots[botId] = spawnBot(botId)
+    }
+}
+
+const spawnBot = (botId) => {
+    const info = profile.getBot(botId)
+    const bot = fork('./bot.js', [info.token])
+    bot.on('message', (msg) => {
+        // TODO: receive message from telegram bot
+    })
+    bot.on('exit', () => {
+        telegramBots[botId] = undefined
+    })
+    return bot
+}
+
+const killBot = (botId) => {
+    const bot = telegramBots[botId]
+    if (bot) {
+        bot.kill()
+    } else {
+        // console.error('bot not exist')
+    }
 }
 
 const getTgBot = (contactId, roomId) => {
+    // TODO: prepare to remove this function
     let contact = profile.getContact(contactId)
     let botId = profile.getLinkedBot(contactId)
     if (!botId) {
@@ -39,6 +70,7 @@ const getTgBot = (contactId, roomId) => {
 }
 
 export const tgMessenger = (contactId, roomId) => {
+    // TODO: prepare to remove this function
     let botId = getTgBot(contactId, roomId)
     let bot = profile.getBot(botId)
 
@@ -49,7 +81,7 @@ export const tgMessenger = (contactId, roomId) => {
 
 export const wechatMsgHandle = async (msg) => {
     let text = msg.text()
-        if (await checkConflict(msg)) return
+    if (await checkConflict(msg)) return
 
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
