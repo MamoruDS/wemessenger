@@ -12,33 +12,39 @@ const bot = new TelegramBot(token, {
 
 process.on('message', async (msg) => {
     let data = msg.msgData
+    let options = msg.options
+    options.parse_mode = 'HTML'
     if (msg.isBuffer) {
         data = Buffer.from(msg.msgData)
+        options.contentType = 'application/octet-stream'
     }
     switch (msg.msgType) {
         case 'message':
-            bot.sendMessage(msg.chatId, data)
+            bot.sendMessage(msg.chatId, data, options)
             break
         case 'photo':
-            bot.sendVideo(msg.chatId, data)
+            bot.sendPhoto(msg.chatId, data, options)
             break
         case 'audio':
-            bot.sendVideo(msg.chatId, data)
+            bot.sendAudio(msg.chatId, data, options)
             break
         case 'document':
-            bot.sendVideo(msg.chatId, data)
+            bot.sendDocument(msg.chatId, data, options)
             break
         case 'sticker':
-            bot.sendVideo(msg.chatId, data)
+            bot.sendSticker(msg.chatId, data, options)
             break
         case 'video':
-            bot.sendVideo(msg.chatId, data)
+            bot.sendVideo(msg.chatId, data, options)
             break
         case 'videoNote':
-            bot.sendVideo(msg.chatId, data)
+            bot.sendVideoNote(msg.chatId, data, options)
+            break
+        case 'voice':
+            bot.sendVoice(msg.chatId, data, options)
             break
         case 'location':
-            bot.sendVideo(msg.chatId, data)
+            // bot.sendLocation(msg.chatId, data)
             break
     }
 })
