@@ -57,7 +57,8 @@ const killBot = (botId) => {
 
 const commandBot = (botId, chatId, dataInfo = {
     msgData: undefined,
-    msgType: undefined
+    msgType: undefined,
+    options: {}
 }) => {
     const bot = telegramBots[botId]
     if (bot) {
@@ -65,7 +66,8 @@ const commandBot = (botId, chatId, dataInfo = {
             chatId: chatId,
             msgData: undefined,
             msgType: undefined,
-            isBuffer: false
+            isBuffer: false,
+            options: dataInfo.options
         }
         if (Buffer.isBuffer(dataInfo.msgData)) {
             msg.msgData = JSON.parse(JSON.stringify(dataInfo.msgData)).data
@@ -120,6 +122,13 @@ export const wechatMsgHandle = async (msg) => {
     let text = msg.text()
     if (await checkConflict(msg)) return
 
+    let messengerId = undefined
+    let chatId = undefined
+    let dataInfo = {
+        msgData: undefined,
+        msgType: undefined,
+        options: {}
+    }
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
         // console.log('MessageType: ' + 'Attachment'.red)
@@ -129,23 +138,32 @@ export const wechatMsgHandle = async (msg) => {
             .replace(/(.*?\<url\>)/, '')
             .replace(/(\<\/url\>.*)/, '')
         if (url) {
-            messenger.sendMessage(tgUser, format.parseWechatURL(text), {
-                parse_mode: 'HTML'
-            })
+            // messenger.sendMessage(tgUser, format.parseWechatURL(text), {
+            // parse_mode: 'HTML'
+            // })
+            dataInfo.msgData = format.parseWechatURL(text)
+            dataInfo.msgType = 'message'
         } else {
             let file = await msg.toFileBox()
-            let stream = await file.toStream()
-            messenger.sendDocument(tgUser, stream, {}, {
-                filename: file.name,
-                contentType: 'application/octet-stream'
-            })
+            let buf = await file.toBuffer()
+            // let stream = await file.toStream()
+            // messenger.sendDocument(tgUser, stream, {}, {
+            // filename: file.name,
+            // contentType: 'application/octet-stream'
+            // })
+            dataInfo.msgData = buf
+            dataInfo.msgType = 'document'
+            dataInfo.options.filename = file.name
         }
     } else if (msg.type() === main.messageType.Audio) {
         // voice note message
         // TODO: show sound wave on telegram macos/android/ios
         let file = await msg.toFileBox()
-        let stream = await file.toStream()
-        messenger.sendVoice(tgUser, stream)
+        let buf = await file.toBuffer()
+        // let stream = await file.toStream()
+        // messenger.sendVoice(tgUser, stream)
+        dataInfo.msgData = buf
+        dataInfo.msgType = 'voice'
     } else if (msg.type() === main.messageType.Contact) {
         // unknown type of message
         console.log('MessageType: ' + 'Contact'.red)
@@ -161,7 +179,9 @@ export const wechatMsgHandle = async (msg) => {
                 let stickerFileId = file.name
                 stickerFileId = stickerFileId.replace(/(tg_sticker_unique_file_id_.*?)/g, '')
                 stickerFileId = stickerFileId.replace(/\.gif$/g, '')
-                messenger.sendSticker(tgUser, stickerFileId)
+                // messenger.sendSticker(tgUser, stickerFileId)
+                dataInfo.msgData = stickerFileId
+                dataInfo.msgType = 'sticker'
             } else {
                 let image = gm(buf, file.name)
                 let tempame = Date.now().toString()
@@ -172,7 +192,9 @@ export const wechatMsgHandle = async (msg) => {
                             if (err) {
                                 console.log(err)
                             }
-                            messenger.sendDocument(tgUser, `tmp/${tempame}.webp`)
+                            // messenger.sendDocument(tgUser, `tmp/${tempame}.webp`)
+                            dataInfo.msgData = `tmp/${tempame}.webp`
+                            dataInfo.msgType = 'document'
                             fs.unlinkSync(`tmp/${tempame}.webp`)
                         })
                     } else {
@@ -187,39 +209,52 @@ export const wechatMsgHandle = async (msg) => {
                         //             messenger.sendDocument(tgUser, buffer)
                         //         }
                         //     })
-                        messenger.sendDocument(tgUser, buf, {}, {
-                            filename: file.name
-                        })
+                        // messenger.sendDocument(tgUser, buf, {}, {
+                        // filename: file.name
+                        // })
+                        dataInfo.msgData = buf
+                        dataInfo.msgType = 'document'
+                        dataInfo.options.filename = file.name
                     }
                 })
             }
         } else {
             console.log('MessageType: ' + 'Image-photo'.red)
-            let stream = await file.toStream()
-            messenger.sendPhoto(tgUser, stream)
+            let buf = await file.toBuffer()
+            // let stream = await file.toStream()
+            // messenger.sendPhoto(tgUser, stream)
+            dataInfo.msgData = buf
+            dataInfo.msgType = 'photo'
         }
     } else if (msg.type() === main.messageType.Text) {
         // text message
         console.log('MessageType: ' + 'Text'.red)
-        messenger.sendMessage(tgUser, text)
+        // messenger.sendMessage(tgUser, text)
+        dataInfo.msgData = text
+        dataInfo.msgType = 'message'
     } else if (msg.type() === main.messageType.Video) {
         // video message
         console.log('MessageType: ' + 'Video'.red)
         let file = await msg.toFileBox()
         let buf = await alternative.wechatVideoBuffer(file)
-        messenger.sendVideo(tgUser, buf)
+        // messenger.sendVideo(tgUser, buf)
+        dataInfo.msgData = buf
+        dataInfo.msgType = 'video'
     } else if (msg.type() === main.messageType.Url) {
         // unknown type of message
         console.log('MessageType: ' + 'Url'.red)
-        messenger.sendMessage(tgUser, format.parseWechatURL(text), {
-            parse_mode: 'HTML'
-        })
+        // messenger.sendMessage(tgUser, format.parseWechatURL(text), {
+        //     parse_mode: 'HTML'
+        // })
+        dataInfo.msgData = format.parseWechatURL(text)
+        dataInfo.msgType = 'message'
     } else {
         // unknown type of message
         console.log('MessageType: ' + 'Other'.red)
         // messenger.sendMessage(tgUser, text)
         console.log(msg)
     }
+    commandBot(messengerId, chatId, dataInfo)
 }
 
 tbot.on('message', async (msg) => {
