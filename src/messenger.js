@@ -1,4 +1,3 @@
-const TelegramBot = require('node-telegram-bot-api')
 import * as profile from './profile'
 import * as format from './format'
 import * as main from './main'
@@ -19,14 +18,11 @@ const gm = require('gm').subClass({
 const token = testProfile.token
 const tgUser = testProfile.tgUser
 const wcUserAlias = testProfile.wcUser
-const tbot = new TelegramBot(token, {
-    polling: true
-})
 
 let msgConflict = {}
 let telegramBots = {}
 
-const initBots = () => {
+export const initBots = () => {
     const bots = profile.getBots()
     for (let botId in bots) {
         telegramBots[botId] = spawnBot(botId)
@@ -36,7 +32,7 @@ const initBots = () => {
 const spawnBot = (botId) => {
     const info = profile.getBot(botId)
     if (info.token) {
-        const bot = fork('./bot.js', [info.token])
+        const bot = fork('dist/bot.js', [info.token])
         bot.on('message', (msg) => {
             // TODO: receive message from telegram bot
         })
@@ -78,7 +74,7 @@ const commandBot = (botId, chatId, dataInfo = {
         } else {
             return
         }
-        const typeSet = ['message', 'photo', 'audio', 'document', 'sticker', 'video', 'videoNote', 'location']
+        const typeSet = ['message', 'photo', 'audio', 'document', 'sticker', 'video', 'videoNote', 'voice', 'location']
         if (typeSet.indexOf(dataInfo.msgType) !== -1) {
             msg.msgType = dataInfo.msgType
         } else {
@@ -138,51 +134,48 @@ const getTelegramBotByMessage = (msg) => {
 }
 
 export const wechatMsgHandle = async (msg) => {
-    let text = msg.text()
     if (await checkConflict(msg)) return
-
-    let messengerId = undefined
-    let chatId = undefined
+    const messenger = getTelegramBotByMessage(msg)
+    const messengerId = messenger.botId
+    const chatId = messenger.chatId
+    if (messenger.muted || !messengerId || !chatId) return
     let dataInfo = {
         msgData: undefined,
         msgType: undefined,
         options: {}
     }
+
+    const callBot = () => {
+        commandBot(messengerId, chatId, dataInfo)
+    }
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
-        // console.log('MessageType: ' + 'Attachment'.red)
+        const text = msg.text()
         console.log(text)
         let textDecode = format.decodeHTML(text)
         let url = textDecode
             .replace(/(.*?\<url\>)/, '')
             .replace(/(\<\/url\>.*)/, '')
         if (url) {
-            // messenger.sendMessage(tgUser, format.parseWechatURL(text), {
-            // parse_mode: 'HTML'
-            // })
             dataInfo.msgData = format.parseWechatURL(text)
             dataInfo.msgType = 'message'
+            callBot()
         } else {
             let file = await msg.toFileBox()
             let buf = await file.toBuffer()
-            // let stream = await file.toStream()
-            // messenger.sendDocument(tgUser, stream, {}, {
-            // filename: file.name,
-            // contentType: 'application/octet-stream'
-            // })
             dataInfo.msgData = buf
             dataInfo.msgType = 'document'
             dataInfo.options.filename = file.name
+            callBot()
         }
     } else if (msg.type() === main.messageType.Audio) {
         // voice note message
         // TODO: show sound wave on telegram macos/android/ios
         let file = await msg.toFileBox()
         let buf = await file.toBuffer()
-        // let stream = await file.toStream()
-        // messenger.sendVoice(tgUser, stream)
         dataInfo.msgData = buf
         dataInfo.msgType = 'voice'
+        callBot()
     } else if (msg.type() === main.messageType.Contact) {
         // unknown type of message
         console.log('MessageType: ' + 'Contact'.red)
@@ -198,26 +191,21 @@ export const wechatMsgHandle = async (msg) => {
                 let stickerFileId = file.name
                 stickerFileId = stickerFileId.replace(/(tg_sticker_unique_file_id_.*?)/g, '')
                 stickerFileId = stickerFileId.replace(/\.gif$/g, '')
-                // messenger.sendSticker(tgUser, stickerFileId)
                 dataInfo.msgData = stickerFileId
                 dataInfo.msgType = 'sticker'
+                callBot()
             } else {
                 let image = gm(buf, file.name)
                 let tempame = Date.now().toString()
-                image.identify(async (err, info) => {
+                await image.identify(async (err, info) => {
                     if (!info.Scene) {
-                        console.log('MessageType: ' + 'Image-gif-sticker'.red)
-                        image.setFormat('WebP').write(`tmp/${tempame}.webp`, async (err) => {
-                            if (err) {
-                                console.log(err)
-                            }
-                            // messenger.sendDocument(tgUser, `tmp/${tempame}.webp`)
-                            dataInfo.msgData = `tmp/${tempame}.webp`
+                        await image.setFormat('WebP').write(`temp/${tempame}.webp`, async (err) => {
+                            if (err) console.error(err)
+                            dataInfo.msgData = `temp/${tempame}.webp`
                             dataInfo.msgType = 'document'
-                            fs.unlinkSync(`tmp/${tempame}.webp`)
+                            callBot()
                         })
                     } else {
-                        console.log('MessageType: ' + 'Image-gif-gif'.red)
                         // TODO: gif with small size will shown as an attachment on telegram
                         // image.coalesce()
                         //     .resize(200, 200)
@@ -228,52 +216,44 @@ export const wechatMsgHandle = async (msg) => {
                         //             messenger.sendDocument(tgUser, buffer)
                         //         }
                         //     })
-                        // messenger.sendDocument(tgUser, buf, {}, {
-                        // filename: file.name
-                        // })
                         dataInfo.msgData = buf
                         dataInfo.msgType = 'document'
                         dataInfo.options.filename = file.name
+                        callBot()
                     }
                 })
             }
         } else {
-            console.log('MessageType: ' + 'Image-photo'.red)
             let buf = await file.toBuffer()
-            // let stream = await file.toStream()
-            // messenger.sendPhoto(tgUser, stream)
             dataInfo.msgData = buf
             dataInfo.msgType = 'photo'
+            callBot()
         }
     } else if (msg.type() === main.messageType.Text) {
         // text message
-        console.log('MessageType: ' + 'Text'.red)
-        // messenger.sendMessage(tgUser, text)
+        const text = msg.text()
         dataInfo.msgData = text
         dataInfo.msgType = 'message'
+        callBot()
     } else if (msg.type() === main.messageType.Video) {
         // video message
-        console.log('MessageType: ' + 'Video'.red)
         let file = await msg.toFileBox()
         let buf = await alternative.wechatVideoBuffer(file)
-        // messenger.sendVideo(tgUser, buf)
         dataInfo.msgData = buf
         dataInfo.msgType = 'video'
+        callBot()
     } else if (msg.type() === main.messageType.Url) {
         // unknown type of message
+        const text = msg.text()
         console.log('MessageType: ' + 'Url'.red)
-        // messenger.sendMessage(tgUser, format.parseWechatURL(text), {
-        //     parse_mode: 'HTML'
-        // })
         dataInfo.msgData = format.parseWechatURL(text)
         dataInfo.msgType = 'message'
+        callBot()
     } else {
         // unknown type of message
         console.log('MessageType: ' + 'Other'.red)
-        // messenger.sendMessage(tgUser, text)
         console.log(msg)
     }
-    commandBot(messengerId, chatId, dataInfo)
 }
 
 tbot.on('message', async (msg) => {
@@ -339,6 +319,20 @@ tbot.on('message', async (msg) => {
 export const telegramMsgHandle = () => {
 
 }
+
+// TODO: improve wechatMsgHandle return a Promise
+// export const telegramMessenger = async (msg) => {
+//     if (await checkConflict(msg)) return
+
+//     const messenger = getTelegramBotByMessage(msg)
+//     const messengerId = messenger.botId
+//     const chatId = messenger.chatId
+//     if (messenger.muted || !messengerId || !chatId) return
+
+//     const dataInfo = await wechatMsgHandle(msg)
+//     console.log(dataInfo)
+//     commandBot(messengerId, chatId, dataInfo)
+// }
 
 const setMsgConflict = (id, type, content) => {
     if (type === 'text') {
