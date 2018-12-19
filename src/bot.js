@@ -1,4 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api')
+import * as fs from 'fs'
 
 const token = process.argv[2]
 if (!token) {
@@ -46,5 +47,8 @@ process.on('message', async (msg) => {
         case 'location':
             // bot.sendLocation(msg.chatId, data)
             break
+    }
+    if (typeof data == 'string') {
+        if (fs.lstatSync(data).isFile()) fs.unlinkSync(data)
     }
 })
