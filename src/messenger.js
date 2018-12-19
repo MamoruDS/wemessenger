@@ -4,6 +4,7 @@ import * as format from './format'
 import * as main from './main'
 import * as testProfile from './test_profile'
 import * as alternative from './alternative'
+import * as rule from './rule'
 import * as fs from 'fs'
 import {
     fork
@@ -92,30 +93,48 @@ const commandBot = (botId, chatId, dataInfo = {
     }
 }
 
-const getTgBot = (contactId, roomId) => {
-    // TODO: prepare to remove this function
-    let contact = profile.getContact(contactId)
-    let botId = profile.getLinkedBot(contactId)
-    if (!botId) {
-        if (contact.publicBool) {
-            botId = profile.getBotByRule('public')
-        } else if (contact.roomBool) {
-            botId = profile.getBotByRule('room', roomId)
-        } else {
-            botId = profile.getBotByRule('personal')
+const getTelegramBotByMessage = (msg) => {
+    let wechatId = undefined
+    let userId = undefined
+    let roomId = undefined
+    if (msg.self()) {
+        wechatId = profile.getSelf().wechatId
+    } else {
+        wechatId = msg.from().id
+    }
+    userId = profile.existContact(wechatId)
+    if (!userId) {
+        userId = profile.checkLocalContact(wechatId, {
+            name: msg.from().payload.name,
+            alias: msg.from().payload.alias
+        }, true)
+        if (!userId) {
+            userId = profile.setContactUser(undefined, {
+                tempId: msg.from().id,
+                name: msg.from().payload.name,
+                alias: msg.from().payload.alias,
+                publicBool: (msg.from().payload.type === 1) ? false : true
+            })
         }
     }
-    return botId
-}
-
-export const tgMessenger = (contactId, roomId) => {
-    // TODO: prepare to remove this function
-    let botId = getTgBot(contactId, roomId)
-    let bot = profile.getBot(botId)
-
-    if (bot) {
-        // do something
+    if (msg.room()) {
+        roomId = profile.existContact(msg.room().id)
+        console.log("Receive a room chat.".white + '\nwechatId(room): '.red + msg.room().id)
+        if (!roomId) {
+            // let checkRoom = profile.checkLocalContact(msg.room().id)
+            roomId = profile.checkLocalContact(msg.room().id, {
+                topic: msg.room().payload.topic
+            }, true)
+            if (!roomId) {
+                roomId = profile.setContactRoom(undefined, {
+                    tempId: msg.room().id,
+                    topic: msg.room().payload.topic,
+                    mute: false
+                })
+            }
+        }
     }
+    return rule.getTelegramMessengerBot(userId, roomId)
 }
 
 export const wechatMsgHandle = async (msg) => {
