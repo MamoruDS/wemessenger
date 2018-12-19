@@ -13,36 +13,38 @@ const bot = new TelegramBot(token, {
 
 process.on('message', async (msg) => {
     let data = msg.msgData
-    let options = msg.options
+    let options = {}
+    let fileOptions = {}
     options.parse_mode = 'HTML'
+    fileOptions.filename = msg.options.filename || undefined
     if (msg.isBuffer) {
         data = Buffer.from(msg.msgData)
-        options.contentType = 'application/octet-stream'
+        fileOptions.contentType = 'application/octet-stream'
     }
     switch (msg.msgType) {
         case 'message':
-            bot.sendMessage(msg.chatId, data, options)
+            bot.sendMessage(msg.chatId, data, options, fileOptions)
             break
         case 'photo':
-            bot.sendPhoto(msg.chatId, data, options)
+            bot.sendPhoto(msg.chatId, data, options, fileOptions)
             break
         case 'audio':
-            bot.sendAudio(msg.chatId, data, options)
+            bot.sendAudio(msg.chatId, data, options, fileOptions)
             break
         case 'document':
-            bot.sendDocument(msg.chatId, data, options)
+            bot.sendDocument(msg.chatId, data, options, fileOptions)
             break
         case 'sticker':
-            bot.sendSticker(msg.chatId, data, options)
+            bot.sendSticker(msg.chatId, data, options, fileOptions)
             break
         case 'video':
-            bot.sendVideo(msg.chatId, data, options)
+            bot.sendVideo(msg.chatId, data, options, fileOptions)
             break
         case 'videoNote':
-            bot.sendVideoNote(msg.chatId, data, options)
+            bot.sendVideoNote(msg.chatId, data, options, fileOptions)
             break
         case 'voice':
-            bot.sendVoice(msg.chatId, data, options)
+            bot.sendVoice(msg.chatId, data, options, fileOptions)
             break
         case 'location':
             // bot.sendLocation(msg.chatId, data)
