@@ -1,4 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api')
+import {
+    FileBox
+} from 'file-box'
 import * as fs from 'fs'
 
 const token = process.argv[2]
@@ -51,6 +54,6 @@ process.on('message', async (msg) => {
             break
     }
     if (typeof data == 'string') {
-        if (fs.lstatSync(data).isFile()) fs.unlinkSync(data)
+        if (fs.existsSync(data)) fs.unlinkSync(data)
     }
 })
