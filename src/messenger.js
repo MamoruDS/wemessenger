@@ -1,23 +1,14 @@
 import * as profile from './profile'
 import * as format from './format'
 import * as main from './main'
-import * as testProfile from './test_profile'
 import * as alternative from './alternative'
 import * as rule from './rule'
-import * as fs from 'fs'
 import {
     fork
 } from 'child_process'
-import {
-    FileBox
-} from 'file-box'
 const gm = require('gm').subClass({
     imageMagick: true
 })
-
-const token = testProfile.token
-const tgUser = testProfile.tgUser
-const wcUserAlias = testProfile.wcUser
 
 let msgConflict = {}
 let telegramBots = {}
@@ -255,66 +246,6 @@ export const wechatMsgHandle = async (msg) => {
         console.log(msg)
     }
 }
-
-tbot.on('message', async (msg) => {
-    console.log(msg)
-    let wcUser = await main.bot.Contact.find({
-        alias: wcUserAlias
-    })
-    if (wcUser) {
-        let text = msg.text
-        if (text) {
-            wcUser.say(text)
-            setMsgConflict(wcUser.id, 'text', text)
-        }
-        let sticker = msg.sticker
-        if (sticker) {
-            let fileLink = await tbot.getFileLink(sticker.file_id)
-            let file = await FileBox.fromUrl(fileLink)
-            let buf = await file.toBuffer()
-            gm(buf).toBuffer('gif', async (err, buffer) => {
-                if (err) console.error(err)
-                file = await FileBox.fromBuffer(buffer, `tg_sticker_unique_file_id_${sticker.file_id}.gif`)
-                wcUser.say(file)
-                setMsgConflict(wcUser.id, 'sticker', `tg_sticker_unique_file_id_${sticker.file_id}.gif`)
-            })
-        }
-        let photo = msg.photo
-        if (photo) {
-            if (photo.length) {
-                photo = photo[photo.length - 1]
-            }
-            let photoName = `photo_${Date.now()}.jpg`
-            let fileLink = await tbot.getFileLink(photo.file_id)
-            let file = await FileBox.fromUrl(fileLink, photoName)
-            wcUser.say(file)
-            setMsgConflict(wcUser.id, 'photo', photoName)
-        }
-        let animation = msg.animation
-        if (animation) {
-            let fileLink = await tbot.getFileLink(animation.file_id)
-            let file = await FileBox.fromUrl(fileLink, animation.file_name)
-            wcUser.say(file)
-            file.toFile('tmp/' + animation.file_name)
-            // setMsgConflict(wcUser.id, 'gif', animation.file_name)
-        }
-        let video_note = msg.video_note
-        if (video_note) {
-            // TODO: file & video sending issue
-            // let fileLink = await tbot.getFileLink(video_note.file_id)
-            // console.log(fileLink)
-            // let file = await FileBox.fromUrl(fileLink)
-            // // let buf = await file.toBuffer()
-            // wcUser.say(file)
-            // // file.toFile('tmp/' + video_note.file_name)
-            // // setMsgConflict(wcUser.id, 'gif', video_note.file_name)
-        }
-        let voice = msg.voice
-        if (voice) {
-            // TODO: web wechat doesn't support voice message sending, waiting for windows-client puppet(?)
-        }
-    }
-})
 
 export const telegramMsgHandle = () => {
 
