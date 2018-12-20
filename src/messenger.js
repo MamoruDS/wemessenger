@@ -43,7 +43,7 @@ const killBot = (botId) => {
     }
 }
 
-const commandBot = (botId, chatId, dataInfo = {
+const commandBot = (botId, chatId, prefixStr, dataInfo = {
     msgData: undefined,
     msgType: undefined,
     options: {}
@@ -55,7 +55,8 @@ const commandBot = (botId, chatId, dataInfo = {
             msgData: undefined,
             msgType: undefined,
             isBuffer: false,
-            options: dataInfo.options
+            options: dataInfo.options,
+            prefixStr: prefixStr
         }
         if (Buffer.isBuffer(dataInfo.msgData)) {
             msg.msgData = JSON.parse(JSON.stringify(dataInfo.msgData)).data
@@ -134,6 +135,7 @@ export const wechatMsgHandle = async (msg) => {
     const messenger = getTelegramBotByMessage(msg)
     const messengerId = messenger.botId
     const chatId = messenger.chatId
+    const prefixStr = messenger.prefix
     if (messenger.muted || !messengerId || !chatId) return
     let dataInfo = {
         msgData: undefined,
@@ -142,7 +144,7 @@ export const wechatMsgHandle = async (msg) => {
     }
 
     const callBot = () => {
-        commandBot(messengerId, chatId, dataInfo)
+        commandBot(messengerId, chatId, prefixStr, dataInfo)
     }
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
