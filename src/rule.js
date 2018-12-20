@@ -1,5 +1,4 @@
 import * as profile from './profile'
-import {msgLang} from './profile'
 
 const setLinkWechatContact = (contactId, botId) => {
     let res = {
@@ -12,7 +11,7 @@ const setLinkWechatContact = (contactId, botId) => {
         for (let i in links) {
             if (links[i] === botId) {
                 res.error = true
-                res.msg = msgLang('ERR', '4001')
+                res.msg = profile.msgLang('ERR', '4001')
             }
         }
     }
@@ -65,22 +64,22 @@ export const getTelegramMessengerBot = (userId, roomId) => {
                 res.botId = roomBot
             }
         } else {
-            res.botId = getDefaultBot()
+            res.botId = getDefaultBotId()
         }
     } else {
         if (userBot) {
             res.botId = userBot
             res = profile.objUpdate(res, 'chatId', userInfo.bindChatId)
         } else {
-            res.botId = getDefaultBot()
+            res.botId = getDefaultBotId()
         }
     }
-
+    console.log(res)
     return res
 }
 
-const getDefaultBot = () => {
-    return profile.getDefaultBot()
+const getDefaultBotId = () => {
+    return profile.getDefaultBotId()
 }
 
 const getBotInfo = (botId) => {
@@ -94,4 +93,3 @@ const getRoomInfo = (roomId) => {
 const getUserInfo = (userId) => {
     return profile.getContact(userId)
 }
-

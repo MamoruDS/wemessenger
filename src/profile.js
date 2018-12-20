@@ -84,14 +84,14 @@ export const setBot = (botId, mode, token) => {
     setProfile(_profile)
 }
 
-export const getDefaultBot = () => {
+export const getDefaultBotId = () => {
     let _profile = getProfile()
     let bots = _profile.bots
-    let bot = undefined
+    // let bot = undefined
     for (let i in bots) {
-        if (bots[i].isDefault) bot = bots[i]
+        if (bots[i].isDefault) return i
     }
-    return bot
+    // return bot
 }
 
 export const getContact = (contactId) => {
@@ -140,9 +140,9 @@ export const setContactRoom = (contactId, info = {
     if (!contactId) contactId = getUniqueId('room')
     item = objUpdate(item, 'tempId', info.tempId)
     item = objUpdate(item, 'topic', info.topic)
-    item = objUpdate(item, 'mode', info.mode)
-    item = objUpdate(item, 'blacklist', info.blacklist)
-    item = objUpdate(item, 'whitelist', info.whitelist)
+    item = objUpdate(item, 'mode', info.mode, 'blacklist')
+    item = objUpdate(item, 'blacklist', info.blacklist, [])
+    item = objUpdate(item, 'whitelist', info.whitelist, [])
     item = objUpdate(item, 'bindChatId', info.bindChatId)
     item = objUpdate(item, 'mention', info.mention)
     item = objUpdate(item, 'mute', info.mute)
