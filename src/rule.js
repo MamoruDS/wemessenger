@@ -27,18 +27,24 @@ const getSelfChatId = () => {
     return profile.getSelf().telegramId
 }
 
-export const getTelegramMessengerBot = (userId, roomId) => {
+export const getTelegramMessengerBot = (userId, roomId, isSelf) => {
     const isRoom = roomId ? true : false
     const userBot = getLinkByWechatContact(userId)
     const roomBot = getLinkByWechatContact(roomId)
     const userInfo = getUserInfo(userId)
+    const roomInfo = getRoomInfo(roomId)
     let res = {
         botId: undefined,
         chatId: getSelfChatId(),
-        muted: false
+        muted: false,
+        prefix: messagePrefix(isSelf, userInfo, userBot, roomInfo, roomBot, {
+            enableHashTag: true,
+            tagUserBy: 'alias',
+            selfAlias: 'you(wechat)',
+            spaceReplace: '.'
+        })
     }
     if (isRoom) {
-        const roomInfo = getRoomInfo(roomId)
         if (roomInfo.mute) {
             res.muted = true
         } else if (roomInfo.mode === 'blacklist') {
@@ -55,7 +61,7 @@ export const getTelegramMessengerBot = (userId, roomId) => {
                 if (userBot) {
                     res.botId = userBot
                     res.chatId = roomInfo.bindChatId
-                    //TODO: if userBot not in group getChatMembersCount
+                    // TODO: if userBot not in group getChatMembersCount
                 } else {
                     res.botId = roomBot
                     res.chatId = roomInfo.bindChatId
@@ -87,9 +93,38 @@ const getBotInfo = (botId) => {
 }
 
 const getRoomInfo = (roomId) => {
+    if (!roomId) return undefined
     return profile.getContact(roomId)
 }
 
 const getUserInfo = (userId) => {
     return profile.getContact(userId)
+}
+
+const messagePrefix = (isSelf, userInfo, userBot, roomInfo, roomBot, options = {
+    enableHashTag: true,
+    tagUserBy: 'alias',
+    selfAlias: 'you(wechat)',
+    spaceReplace: '.'
+}) => {
+    const hasUserBot = userBot ? true : false
+    const isRoom = roomInfo ? true : false
+    const hasRoomBot = roomBot ? true : false
+    const hashTag = options.enableHashTag ? '#' : ''
+    let userTag = userInfo[options.tagUserBy]
+    let roomTag = ''
+
+    if (isSelf) userTag = options.selfAlias
+    // TODO: support group alias
+    if (roomInfo) roomTag = roomInfo.topic
+
+    if (options.enableHashTag) {
+        userTag = userTag.replace(/ /g, options.spaceReplace)
+        roomTag = roomTag.replace(/ /g, options.spaceReplace)
+    }
+    let prefixWho = ''
+    let prefixWhere = ''
+    if (!hasUserBot) prefixWho = `${hashTag}${userTag} `
+    if (isRoom && !hasRoomBot) prefixWhere = `@ ${hashTag}${roomTag}`
+    return `${prefixWho}${prefixWhere}`
 }
