@@ -84,8 +84,13 @@ const getTelegramBotByMessage = (msg) => {
     let wechatId = undefined
     let userId = undefined
     let roomId = undefined
+    let isSelf = false
     if (msg.self()) {
+        isSelf = true
         wechatId = profile.getSelf().wechatId
+        if (!msg.room()) {
+            wechatId = msg.to().id
+        }
     } else {
         wechatId = msg.from().id
     }
@@ -121,7 +126,7 @@ const getTelegramBotByMessage = (msg) => {
             }
         }
     }
-    return rule.getTelegramMessengerBot(userId, roomId)
+    return rule.getTelegramMessengerBot(userId, roomId, isSelf)
 }
 
 export const wechatMsgHandle = async (msg) => {
@@ -289,9 +294,9 @@ const setMsgConflict = (id, type, content) => {
 const checkConflict = async (msg, log = false) => {
     if (msg.self()) {
         let conflictId = undefined
-        if(msg.room()) {
+        if (msg.room()) {
             conflictId = msg.room().id
-        }else{
+        } else {
             conflictId = msg.to().id
         }
         let msgCheck = msgConflict[conflictId]
