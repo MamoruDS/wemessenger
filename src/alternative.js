@@ -1,4 +1,10 @@
 import axios from 'axios'
+import {
+    spawnSync
+} from 'child_process'
+import {
+    unlinkSync
+} from 'fs'
 
 export const wechatVideoBuffer = async (reqInfo) => {
     const url = reqInfo.remoteUrl.replace('http://', 'https://')
@@ -20,4 +26,17 @@ export const wechatVideoBuffer = async (reqInfo) => {
         responseType: 'arraybuffer'
     })
     return res.data
+}
+
+export const mp32opus = (path, removeTemp = true) => {
+    const pathMp3 = path
+    const pathWav = path.replace(/\.mp3$/, '.wav')
+    const pathOpus = path.replace(/\.mp3$/, '.opus')
+    spawnSync('mpg123', ['-w', pathWav, pathMp3])
+    spawnSync('opusenc', ['--rate', '8000', pathWav, pathOpus])
+    if (removeTemp) {
+        unlinkSync(pathMp3)
+        unlinkSync(pathWav)
+    }
+    return pathOpus
 }

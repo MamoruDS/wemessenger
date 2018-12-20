@@ -168,10 +168,9 @@ export const wechatMsgHandle = async (msg) => {
         }
     } else if (msg.type() === main.messageType.Audio) {
         // voice note message
-        // TODO: show sound wave on telegram macos/android/ios
         let file = await msg.toFileBox()
-        let buf = await file.toBuffer()
-        dataInfo.msgData = buf
+        await file.toFile(`temp/${file.name}`)
+        dataInfo.msgData = alternative.mp32opus(`temp/${file.name}`)
         dataInfo.msgType = 'voice'
         callBot()
     } else if (msg.type() === main.messageType.Contact) {
