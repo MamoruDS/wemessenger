@@ -288,9 +288,14 @@ const setMsgConflict = (id, type, content) => {
 
 const checkConflict = async (msg, log = false) => {
     if (msg.self()) {
-        let id = (msg.to().id || null) || msg.room().id
-        let msgCheck = msgConflict[id]
-        msgConflict[id] = undefined
+        let conflictId = undefined
+        if(msg.room()) {
+            conflictId = msg.room().id
+        }else{
+            conflictId = msg.to().id
+        }
+        let msgCheck = msgConflict[conflictId]
+        msgConflict[conflictId] = undefined
         if (msgCheck) {
             let type = msg.type()
             if (log) {
