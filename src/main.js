@@ -1,4 +1,4 @@
-const TelegramBot = require('node-telegram-bot-api')
+import * as profile from './profile'
 import * as messenger from './messenger'
 import * as colors from 'colors'
 
@@ -9,10 +9,10 @@ const {
     Wechaty,
 } = require('wechaty')
 
-export const profile_path = './profile.json'
-export const id_mode = 'TEMP'
+export const profilePath = './profile.json'
+export const isTempId = true
 
-const bot = new Wechaty({
+export const bot = new Wechaty({
     puppet: 'wechaty-puppet-puppeteer',
     profile: 'mamoruds'
 })
@@ -39,6 +39,10 @@ const onScan = (qrcode, status) => {
 
 const onLogin = (user) => {
     console.log(`${user} login`)
+    profile.expireContacts()
+    profile.setSelf({
+        wechatId: user.id
+    }, true)
     main()
 }
 
@@ -52,10 +56,11 @@ const onError = (e) => {
 
 const onMessage = async (msg) => {
     messenger.wechatMsgHandle(msg)
+    // messenger.telegramMessenger(msg)
 }
 
 const main = () => {
-
+    messenger.initBots()
 }
 
 bot.on('scan', onScan)
