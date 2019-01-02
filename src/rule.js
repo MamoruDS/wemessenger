@@ -1,4 +1,5 @@
 import * as profile from './profile'
+import * as format from './format'
 
 const setLinkWechatContact = (contactId, botId) => {
     let res = {
@@ -102,29 +103,22 @@ const getUserInfo = (userId) => {
 }
 
 const messagePrefix = (isSelf, userInfo, userBot, roomInfo, roomBot, options = {
-    enableHashTag: true,
     tagUserBy: 'alias',
-    selfAlias: 'you(wechat)',
-    spaceReplace: '.'
+    selfAlias: 'you_wechat'
 }) => {
     const hasUserBot = userBot ? true : false
     const isRoom = roomInfo ? true : false
     const hasRoomBot = roomBot ? true : false
-    const hashTag = options.enableHashTag ? '#' : ''
     let userTag = userInfo[options.tagUserBy]
     let roomTag = ''
 
-    if (isSelf) userTag = options.selfAlias
+    if (isSelf) userTag = format.hashTagFormat(options.selfAlias)
     // TODO: support group alias
-    if (roomInfo) roomTag = roomInfo.topic
+    if (roomInfo) roomTag = format.hashTagFormat(roomInfo.topic)
 
-    if (options.enableHashTag) {
-        userTag = userTag.replace(/ /g, options.spaceReplace)
-        roomTag = roomTag.replace(/ /g, options.spaceReplace)
-    }
     let prefixWho = ''
     let prefixWhere = ''
-    if (!hasUserBot) prefixWho = `${hashTag}${userTag} `
-    if (isRoom && !hasRoomBot) prefixWhere = `@ ${hashTag}${roomTag}`
+    if (!hasUserBot || isRoom) prefixWho = `${userTag} `
+    if (isRoom && !hasRoomBot) prefixWhere = `@ ${roomTag}`
     return `${prefixWho}${prefixWhere}`
 }
