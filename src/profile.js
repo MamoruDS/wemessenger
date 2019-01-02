@@ -193,7 +193,10 @@ export const existContact = (wechatId) => {
     let contacts = _profile.contacts
     if (main.isTempId) {
         for (let i in contacts) {
-            if (contacts[i].tempId === wechatId) contactId = i
+            if (contacts[i].tempId === wechatId) {
+                contactId = i
+                break
+            }
         }
     } else {
         if (contacts[wechatId]) contactId = wechatId
@@ -264,6 +267,43 @@ export const checkLocalContact = (wechatId, info = {
         // TODO: if not TEMP id
         return false
     }
+}
+
+export const getContactIdByWechatInfo = (wechatId, wechatInfo = {
+    wechatName: undefined,
+    wechatAlias: undefined,
+    wechatPayloadType: undefined,
+    wechatTopic: undefined
+}, options = {
+    isRoom: false,
+    addContact: true
+}) => {
+    let contactId = undefined
+    contactId = existContact(wechatId)
+    if (!contactId) {
+        contactId = checkLocalContact(wechatId, {
+            name: wechatInfo.wechatName,
+            alias: wechatInfo.wechatAlias,
+            topic: wechatInfo.wechatTopic
+        }, true)
+        if (!contactId && options.addContact) {
+            if (options.isRoom) {
+                contactId = setContactRoom(undefined, {
+                    tempId: wechatId,
+                    topic: wechatInfo.wechatTopic,
+                    mute: false
+                })
+            } else {
+                contactId = setContactUser(undefined, {
+                    tempId: wechatId,
+                    name: wechatInfo.wechatName,
+                    alias: wechatInfo.wechatAlias,
+                    publicBool: (wechatInfo.wechatPayloadType === 1) ? false : true
+                })
+            }
+        }
+    }
+    return contactId
 }
 
 export const getLinks = () => {
