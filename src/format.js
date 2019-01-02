@@ -27,3 +27,10 @@ export const parseWechatURL = (text) => {
 const htmlTagGen = (tag, content, href = undefined) => {
     return `<${tag}${href ? ` href="${href}"` : ""}>${content}</${tag}>`
 }
+
+export const hashTagFormat = (tagName) => {
+    if (!tagName) return 'NaN'
+    tagName = tagName.replace(/[\ |\.|\-|\|]/g, '_')
+    tagName = tagName.replace(/[\ |\!|\#|\$|\&|\'|\"|\(|\)|\*|\+|\,|\/|\\|\:|\;|\=|\?|\@\[|\]|\%|\^|\！|\？|\’|\‘|\“|\”|\，|\。|\（|\）|\【|\】]/g, '')
+    return `#${tagName}`
+}
