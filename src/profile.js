@@ -272,7 +272,7 @@ export const checkLocalContact = (wechatId, info = {
 export const getContactIdByWechatInfo = (wechatId, wechatInfo = {
     wechatName: undefined,
     wechatAlias: undefined,
-    wechatPayloadType: undefined,
+    wechatType: undefined,
     wechatTopic: undefined
 }, options = {
     isRoom: false,
@@ -298,7 +298,8 @@ export const getContactIdByWechatInfo = (wechatId, wechatInfo = {
                     tempId: wechatId,
                     name: wechatInfo.wechatName,
                     alias: wechatInfo.wechatAlias,
-                    publicBool: (wechatInfo.wechatPayloadType === 1) ? false : true
+                    publicBool: (wechatInfo.wechatType === 1) ? false : true,
+                    mute: false
                 })
             }
         }
