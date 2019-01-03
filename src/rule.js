@@ -102,23 +102,101 @@ const getUserInfo = (userId) => {
     return profile.getContact(userId)
 }
 
-const messagePrefix = (isSelf, userInfo, userBot, roomInfo, roomBot, options = {
+const messagePrefix = (isSelf, chatInfo, chatBot, roomInfo, roomBot, options = {
     tagUserBy: 'alias',
     selfAlias: 'you_wechat'
 }) => {
-    const hasUserBot = userBot ? true : false
+    // chat(user) should be 'self' 
+    const hasChatBot = chatBot ? true : false
     const isRoom = roomInfo ? true : false
     const hasRoomBot = roomBot ? true : false
-    let userTag = userInfo[options.tagUserBy]
-    let roomTag = ''
+    let userTag = undefined
+    let roomTag = undefined
 
-    if (isSelf) userTag = format.hashTagFormat(options.selfAlias)
-    // TODO: support group alias
-    if (roomInfo) roomTag = format.hashTagFormat(roomInfo.topic)
+    if (isSelf) {
+        userTag = format.hashTagFormat(options.selfAlias)
+    } else {
+        // TODO: support group alias
+        userTag = chatInfo[options.tagUserBy]
+    }
+    if (roomInfo) {
+        roomTag = format.hashTagFormat(roomInfo.topic)
+    } else {
+        roomTag = ''
+    }
 
     let prefixWho = ''
     let prefixWhere = ''
-    if (!hasUserBot || isRoom) prefixWho = `${userTag} `
+    if (!hasChatBot || isRoom) prefixWho = `${userTag} `
     if (isRoom && !hasRoomBot) prefixWhere = `@ ${roomTag}`
     return `${prefixWho}${prefixWhere}`
+}
+
+export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
+    let res = {
+        botId: undefined,
+        chatID: undefined,
+        muted: false,
+        prefix: undefined
+    }
+    let prefix = {
+        sendInfo: getUserInfo(sendId),
+        recvInfo: getUserInfo(recvId),
+        roomInfo: undefined
+    }
+    const userId = isSelf ? recvId : sendId
+    const userBot = getLinkByWechatContact(userId)
+    const userInfo = getUserInfo(userId)
+    if (roomId) {
+        const roomInfo = getRoomInfo(roomId)
+        const roomBot = getLinkByWechatContact(roomId)
+        prefix.roomInfo = roomInfo
+        if (roomInfo.mute) {
+            res.muted = true
+        } else if (roomInfo.mode === 'blacklist' && roomInfo.blacklist.indexOf(userId) !== -1) {
+            res.muted = true
+        } else if (roomInfo.mode === 'whitelist' && roomInfo.whitelist.indexOf(userId) === -1) {
+            res.muted = true
+        }
+        if (roomBot) res.botId = roomBot
+        if (roomInfo.bindChatId) res.chatId = roomInfo.bindChatId
+    } else {
+        if (userInfo.mute) {
+            res.muted = true
+        }
+        if (userBot) {
+            res.botId = userBot
+            res = profile.objUpdate(res, 'chatId', userInfo.bindChatId)
+        }
+        if (userInfo.bindChatId) res.chatId = userInfo.bindChatId
+    }
+    res.prefix = genMessagePrefix(prefix, res.botId ? true : false, res.chatID ? true : false, isSelf)
+    if (!res.chatID) res.chatID = getSelfChatId()
+    if (!res.botId) res.botId = getDefaultBotId()
+    // console.log(res)
+    return res
+}
+
+const genMessagePrefix = (fieldInfo = {
+    sendInfo: undefined,
+    recvInfo: undefined,
+    roomInfo: undefined
+}, hasChatBot = false, hasBindChat = false, isSelf = false) => {
+    const _options = profile.getOptions()
+    const enableHashTag = _options['enableHashTag']
+    const tagUserBy = _options['tagUserBy']
+    const selfAlias = _options['selfAlias']
+    const sendField = isSelf ? selfAlias : fieldInfo.sendInfo[tagUserBy]
+    const recvField = isSelf ? fieldInfo.roomInfo ? '' : fieldInfo.recvInfo[tagUserBy] : ''
+    const roomField = fieldInfo.roomInfo ? fieldInfo.roomInfo['topic'] : ''
+    const sendTag = enableHashTag ? format.hashTagFormat(sendField) : sendField
+    let recvTag = enableHashTag ? format.hashTagFormat(recvField) : recvField
+    let roomTag = enableHashTag ? format.hashTagFormat(roomField) : roomField
+    recvTag = recvTag ? ` to ${recvTag}` : recvTag
+    roomTag = roomTag ? ` @ ${roomTag}` : roomTag
+    if (hasBindChat || hasChatBot) {
+        return `${sendTag}`
+    } else {
+        return `${sendTag}${recvTag}${roomTag}`
+    }
 }
