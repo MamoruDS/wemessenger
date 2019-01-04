@@ -169,18 +169,18 @@ export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
         }
         if (userInfo.bindChatId) res.bindChatId = userInfo.bindChatId
     }
-    res.prefix = genMessagePrefix(prefix, res.botId ? true : false, res.chatId ? true : false, isSelf)
+    res.prefix = genMessagePrefix(res.botId, res.bindChatId, isSelf, prefix)
     if (!res.bindChatId) res.bindChatId = getSelfChatId()
     if (!res.botId) res.botId = getDefaultBotId()
     // console.log(res)
     return res
 }
 
-const genMessagePrefix = (fieldInfo = {
+const genMessagePrefix = (hasChatBot, hasBindChat, isSelf = false, fieldInfo = {
     sendInfo: undefined,
     recvInfo: undefined,
     roomInfo: undefined
-}, hasChatBot = false, hasBindChat = false, isSelf = false) => {
+}) => {
     const _options = profile.getOptions()
     const enableHashTag = _options['enableHashTag']
     const tagUserWithAlias = _options['tagUserWithAlias']
