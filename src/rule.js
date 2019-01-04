@@ -1,24 +1,24 @@
 import * as profile from './profile'
 import * as format from './format'
 
-const setLinkWechatContact = (contactId, botId) => {
-    let res = {
-        error: false,
-        msg: undefined
-    }
-    const botInfo = profile.getBot(botId)
-    if (botInfo.mode === 'bind') {
-        let links = profile.getLinks()
-        for (let i in links) {
-            if (links[i] === botId) {
-                res.error = true
-                res.msg = profile.msgLang('ERR', '4001')
-            }
-        }
-    }
-    if (!res.error) profile.setLinkedBot(contactId, botId)
-    return res
-}
+// const setLinkWechatContact = (contactId, botId) => {
+//     let res = {
+//         error: false,
+//         msg: undefined
+//     }
+//     const botInfo = profile.getBot(botId)
+//     if (botInfo.mode === 'bind') {
+//         let links = profile.getLinks()
+//         for (let i in links) {
+//             if (links[i] === botId) {
+//                 res.error = true
+//                 res.msg = profile.msgLang('ERR', '4001')
+//             }
+//         }
+//     }
+//     if (!res.error) profile.setLinkedBot(contactId, botId)
+//     return res
+// }
 
 const getLinkByWechatContact = (contactId) => {
     return profile.getLinkedBot(contactId)
@@ -89,10 +89,6 @@ const getDefaultBotId = () => {
     return profile.getDefaultBotId()
 }
 
-const getBotInfo = (botId) => {
-    return profile.getBot(botId)
-}
-
 const getRoomInfo = (roomId) => {
     if (!roomId) return undefined
     return profile.getContact(roomId)
@@ -135,7 +131,8 @@ const messagePrefix = (isSelf, chatInfo, chatBot, roomInfo, roomBot, options = {
 export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
     let res = {
         botId: undefined,
-        chatId: undefined,
+        bindChatId: undefined,
+        contactId: undefined,
         muted: false,
         prefix: undefined
     }
@@ -147,7 +144,9 @@ export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
     const userId = isSelf ? recvId : sendId
     const userBot = getLinkByWechatContact(userId)
     const userInfo = getUserInfo(userId)
+    res.contactId = userId
     if (roomId) {
+        res.contactId = roomId
         const roomInfo = getRoomInfo(roomId)
         const roomBot = getLinkByWechatContact(roomId)
         prefix.roomInfo = roomInfo
@@ -159,19 +158,19 @@ export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
             res.muted = true
         }
         if (roomBot) res.botId = roomBot
-        if (roomInfo.bindChatId) res.chatId = roomInfo.bindChatId
+        if (roomInfo.bindChatId) res.bindChatId = roomInfo.bindChatId
     } else {
         if (userInfo.mute) {
             res.muted = true
         }
         if (userBot) {
             res.botId = userBot
-            res = profile.objUpdate(res, 'chatId', userInfo.bindChatId)
+            res = profile.objUpdate(res, 'bindChatId', userInfo.bindChatId)
         }
-        if (userInfo.bindChatId) res.chatId = userInfo.bindChatId
+        if (userInfo.bindChatId) res.bindChatId = userInfo.bindChatId
     }
     res.prefix = genMessagePrefix(prefix, res.botId ? true : false, res.chatId ? true : false, isSelf)
-    if (!res.chatId) res.chatId = getSelfChatId()
+    if (!res.bindChatId) res.bindChatId = getSelfChatId()
     if (!res.botId) res.botId = getDefaultBotId()
     // console.log(res)
     return res
@@ -189,11 +188,15 @@ const genMessagePrefix = (fieldInfo = {
     const sendField = isSelf ? selfAlias : getAliasNameByInfo(fieldInfo.sendInfo, tagUserWithAlias)
     const recvField = isSelf ? fieldInfo.roomInfo ? '' : getAliasNameByInfo(fieldInfo.recvInfo, tagUserWithAlias) : ''
     const roomField = fieldInfo.roomInfo ? fieldInfo.roomInfo['topic'] : ''
-    const sendTag = enableHashTag ? format.hashTagFormat(sendField) : sendField
+    let sendTag = enableHashTag ? format.hashTagFormat(sendField) : sendField
     let recvTag = enableHashTag ? format.hashTagFormat(recvField) : recvField
     let roomTag = enableHashTag ? format.hashTagFormat(roomField) : roomField
-    recvTag = recvTag ? ` to ${recvTag}` : recvTag
-    roomTag = roomTag ? ` @ ${roomTag}` : roomTag
+    // TODO: read style from options
+    sendTag = sendTag ? `<b>${sendTag}</b>` : sendTag
+    recvTag = recvTag ? `<b>${recvTag}</b>` : recvTag
+    recvTag = recvTag ? ` <code>to</code> ${recvTag}` : recvTag
+    roomTag = roomTag ? `<b>${roomTag}</b>` : roomTag
+    roomTag = roomTag ? ` <code class='123'>@</code> ${roomTag}` : roomTag
     if (hasBindChat || hasChatBot) {
         return `${sendTag}`
     } else {
