@@ -135,7 +135,7 @@ const messagePrefix = (isSelf, chatInfo, chatBot, roomInfo, roomBot, options = {
 export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
     let res = {
         botId: undefined,
-        chatID: undefined,
+        chatId: undefined,
         muted: false,
         prefix: undefined
     }
@@ -170,8 +170,8 @@ export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
         }
         if (userInfo.bindChatId) res.chatId = userInfo.bindChatId
     }
-    res.prefix = genMessagePrefix(prefix, res.botId ? true : false, res.chatID ? true : false, isSelf)
-    if (!res.chatID) res.chatID = getSelfChatId()
+    res.prefix = genMessagePrefix(prefix, res.botId ? true : false, res.chatId ? true : false, isSelf)
+    if (!res.chatId) res.chatId = getSelfChatId()
     if (!res.botId) res.botId = getDefaultBotId()
     // console.log(res)
     return res
@@ -184,10 +184,10 @@ const genMessagePrefix = (fieldInfo = {
 }, hasChatBot = false, hasBindChat = false, isSelf = false) => {
     const _options = profile.getOptions()
     const enableHashTag = _options['enableHashTag']
-    const tagUserBy = _options['tagUserBy']
+    const tagUserWithAlias = _options['tagUserWithAlias']
     const selfAlias = _options['selfAlias']
-    const sendField = isSelf ? selfAlias : fieldInfo.sendInfo[tagUserBy]
-    const recvField = isSelf ? fieldInfo.roomInfo ? '' : fieldInfo.recvInfo[tagUserBy] : ''
+    const sendField = isSelf ? selfAlias : getAliasNameByInfo(fieldInfo.sendInfo, tagUserWithAlias)
+    const recvField = isSelf ? fieldInfo.roomInfo ? '' : getAliasNameByInfo(fieldInfo.recvInfo, tagUserWithAlias) : ''
     const roomField = fieldInfo.roomInfo ? fieldInfo.roomInfo['topic'] : ''
     const sendTag = enableHashTag ? format.hashTagFormat(sendField) : sendField
     let recvTag = enableHashTag ? format.hashTagFormat(recvField) : recvField
@@ -199,4 +199,11 @@ const genMessagePrefix = (fieldInfo = {
     } else {
         return `${sendTag}${recvTag}${roomTag}`
     }
+}
+
+const getAliasNameByInfo = (userInfo, tagUserWithAlias) => {
+    let nameStr = undefined
+    if (tagUserWithAlias) nameStr = userInfo['alias']
+    if (!nameStr) nameStr = userInfo['name']
+    return nameStr
 }
