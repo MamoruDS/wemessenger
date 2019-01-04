@@ -23,9 +23,12 @@ export const initBots = () => {
 const spawnBot = (botId) => {
     const info = profile.getBot(botId)
     if (info.token) {
-        const bot = fork('dist/bot.js', [info.token])
+        const bot = fork('dist/bot.js', [info.token, botId])
         bot.on('message', (msg) => {
             // TODO: receive message from telegram bot
+            if (msg.from.id == profile.getSelf().telegramId) {
+                telegramMsgHandle(msg)
+            }
         })
         bot.on('exit', () => {
             telegramBots[botId] = 'shutdown'
@@ -43,7 +46,7 @@ const killBot = (botId) => {
     }
 }
 
-const commandBot = (botId, chatId, prefixStr, dataInfo = {
+const commandBot = (botId, chatId, contactId, prefixStr, dataInfo = {
     msgData: undefined,
     msgType: undefined,
     options: {}
@@ -52,6 +55,7 @@ const commandBot = (botId, chatId, prefixStr, dataInfo = {
     if (bot) {
         let msg = {
             chatId: chatId,
+            contactId: contactId,
             msgData: undefined,
             msgType: undefined,
             isBuffer: false,
@@ -82,69 +86,53 @@ const commandBot = (botId, chatId, prefixStr, dataInfo = {
 }
 
 const getTelegramBotByMessage = (msg) => {
-    let wechatId = undefined
-    let userId = undefined
+    let sendId = undefined
+    let recvId = undefined
     let roomId = undefined
     let isSelf = false
     if (msg.self()) {
         isSelf = true
-        wechatId = profile.getSelf().wechatId
+        sendId = profile.getContactIdByWechatInfo(profile.getSelf().wechatId)
         if (!msg.room()) {
-            wechatId = msg.to().id
-        }
-    } else {
-        wechatId = msg.from().id
-    }
-    userId = profile.existContact(wechatId)
-    if (!userId) {
-        userId = profile.checkLocalContact(wechatId, {
-            name: msg.from().payload.name,
-            alias: msg.from().payload.alias
-        }, true)
-        if (!userId) {
-            userId = profile.setContactUser(undefined, {
-                tempId: msg.from().id,
-                name: msg.from().payload.name,
-                alias: msg.from().payload.alias,
-                publicBool: (msg.from().payload.type === 1) ? false : true
+            recvId = profile.getContactIdByWechatInfo(msg.to().id, {
+                wechatName: msg.to().payload.name,
+                wechatAlias: msg.to().payload.alias,
+                wechatType: msg.to().payload.type
             })
         }
+    } else {
+        sendId = profile.getContactIdByWechatInfo(msg.from().id, {
+            wechatName: msg.from().payload.name,
+            wechatAlias: msg.from().payload.alias,
+            wechatType: msg.from().payload.type
+        })
     }
     if (msg.room()) {
-        roomId = profile.existContact(msg.room().id)
-        console.log("Receive a room chat.".white + '\nwechatId(room): '.red + msg.room().id)
-        if (!roomId) {
-            // let checkRoom = profile.checkLocalContact(msg.room().id)
-            roomId = profile.checkLocalContact(msg.room().id, {
-                topic: msg.room().payload.topic
-            }, true)
-            if (!roomId) {
-                roomId = profile.setContactRoom(undefined, {
-                    tempId: msg.room().id,
-                    topic: msg.room().payload.topic,
-                    mute: false
-                })
-            }
-        }
+        roomId = profile.getContactIdByWechatInfo(msg.room().id, {
+            wechatTopic: msg.room().payload.topic
+        }, {
+            isRoom: true
+        })
     }
-    return rule.getTelegramMessengerBot(userId, roomId, isSelf)
+    return rule.getTelegramMessengerBotRe(sendId, recvId, roomId, isSelf)
 }
 
 export const wechatMsgHandle = async (msg) => {
+    // TODO: improve wechatMsgHandle return a Promise
     if (await checkConflict(msg)) return
     const messenger = getTelegramBotByMessage(msg)
     const messengerId = messenger.botId
-    const chatId = messenger.chatId
+    const bindChatId = messenger.bindChatId
+    const contactId = messenger.contactId
     const prefixStr = messenger.prefix
-    if (messenger.muted || !messengerId || !chatId) return
+    if (messenger.muted || !messengerId || !bindChatId || !contactId) return
     let dataInfo = {
         msgData: undefined,
         msgType: undefined,
         options: {}
     }
-
     const callBot = () => {
-        commandBot(messengerId, chatId, prefixStr, dataInfo)
+        commandBot(messengerId, bindChatId, contactId, prefixStr, dataInfo)
     }
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
@@ -253,23 +241,9 @@ export const wechatMsgHandle = async (msg) => {
     }
 }
 
-export const telegramMsgHandle = () => {
-
+export const telegramMsgHandle = async (msg) => {
+    console.log(msg)
 }
-
-// TODO: improve wechatMsgHandle return a Promise
-// export const telegramMessenger = async (msg) => {
-//     if (await checkConflict(msg)) return
-
-//     const messenger = getTelegramBotByMessage(msg)
-//     const messengerId = messenger.botId
-//     const chatId = messenger.chatId
-//     if (messenger.muted || !messengerId || !chatId) return
-
-//     const dataInfo = await wechatMsgHandle(msg)
-//     console.log(dataInfo)
-//     commandBot(messengerId, chatId, dataInfo)
-// }
 
 const setMsgConflict = (id, type, content) => {
     if (type === 'text') {
