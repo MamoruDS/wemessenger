@@ -111,7 +111,8 @@ const getTelegramBotByMessage = (msg) => {
         roomId = profile.getContactIdByWechatInfo(msg.room().id, {
             wechatTopic: msg.room().payload.topic
         }, {
-            isRoom: true
+            isRoom: true,
+            addContact: true
         })
     }
     return rule.getTelegramMessengerBotRe(sendId, recvId, roomId, isSelf)
