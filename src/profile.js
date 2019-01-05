@@ -232,15 +232,29 @@ export const expireContacts = () => {
     setProfile(_profile)
 }
 
-export const checkLocalContact = (wechatId, info = {
+export const checkLocalContact = (wechatId, updateInfo, info = {
     name: undefined,
     alias: undefined,
     topic: undefined,
     members: undefined
-}, updateTempId = false) => {
+}) => {
     if (main.isTempId) {
         let contactId = existContact(wechatId)
         if (contactId) {
+            if (updateInfo) {
+                if (info.name || info.alias) {
+                    console.log('update user')
+                    setContactUser(contactId, {
+                        name: info.name,
+                        alias: info.alias
+                    })
+                } else {
+                    console.log('update room')
+                    setContactRoom(contactId, {
+                        topic: info.topic
+                    })
+                }
+            }
             return contactId
         } else {
             let localContact = searchContact({
@@ -253,7 +267,7 @@ export const checkLocalContact = (wechatId, info = {
             })
             if (localContact) {
                 let contactId = localContact[0]
-                if (updateTempId && contactId) {
+                if (updateInfo && contactId) {
                     setContactRoom(contactId, {
                         tempId: wechatId
                     })
@@ -279,29 +293,26 @@ export const getContactIdByWechatInfo = (wechatId, wechatInfo = {
     addContact: true
 }) => {
     let contactId = undefined
-    contactId = existContact(wechatId)
-    if (!contactId) {
-        contactId = checkLocalContact(wechatId, {
-            name: wechatInfo.wechatName,
-            alias: wechatInfo.wechatAlias,
-            topic: wechatInfo.wechatTopic
-        }, true)
-        if (!contactId && options.addContact) {
-            if (options.isRoom) {
-                contactId = setContactRoom(undefined, {
-                    tempId: wechatId,
-                    topic: wechatInfo.wechatTopic,
-                    mute: false
-                })
-            } else {
-                contactId = setContactUser(undefined, {
-                    tempId: wechatId,
-                    name: wechatInfo.wechatName,
-                    alias: wechatInfo.wechatAlias,
-                    publicBool: (wechatInfo.wechatType === 1) ? false : true,
-                    mute: false
-                })
-            }
+    contactId = checkLocalContact(wechatId, true, {
+        name: wechatInfo.wechatName,
+        alias: wechatInfo.wechatAlias,
+        topic: wechatInfo.wechatTopic
+    })
+    if (!contactId && options.addContact) {
+        if (options.isRoom) {
+            contactId = setContactRoom(undefined, {
+                tempId: wechatId,
+                topic: wechatInfo.wechatTopic,
+                mute: false
+            })
+        } else {
+            contactId = setContactUser(undefined, {
+                tempId: wechatId,
+                name: wechatInfo.wechatName,
+                alias: wechatInfo.wechatAlias,
+                publicBool: (wechatInfo.wechatType === 1) ? false : true,
+                mute: false
+            })
         }
     }
     return contactId
