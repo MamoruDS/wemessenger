@@ -217,7 +217,7 @@ export const wechatMsgHandle = async (msg) => {
         }
     } else if (msg.type() === main.messageType.Text) {
         // text message
-        const text = msg.text()
+        const text = format.parseWechatEmoji(msg.text(), true)
         dataInfo.msgData = text
         dataInfo.msgType = 'message'
         callBot()
