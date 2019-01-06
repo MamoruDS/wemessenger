@@ -36,3 +36,11 @@ export const hashTagFormat = (tagName) => {
     tagName = tagName.replace(/[\ |\!|\#|\$|\&|\'|\"|\(|\)|\*|\+|\/|\\|\:|\;|\=|\?|\@\[|\]|\%|\^|\！|\？|\’|\‘|\“|\”|\，|\。|\（|\）|\【|\】]/g, '')
     return `#${tagName}`
 }
+
+const nullObjProp = (obj, prop = [], undefinedReturn = '') => {
+    for (let i = 0; i < prop.length; i++) {
+        obj = obj[prop[i]]
+        if (obj === undefined) return undefinedReturn
+    }
+    return obj
+}
