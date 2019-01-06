@@ -44,3 +44,14 @@ const nullObjProp = (obj, prop = [], undefinedReturn = '') => {
     }
     return obj
 }
+
+export const parseWechatEmoji = (msg, replaceObj = false) => {
+    if (replaceObj === true) {
+        replaceObj = jsonio.readJSON('res/wechatEmoji.json', {})
+        for (let key of Object.keys(nullObjProp(replaceObj, ['withOutTag'], {}))) msg = msg.replace(new RegExp(key, 'g'), nullObjProp(replaceObj, ['withOutTag', key]))
+    }
+    return msg.replace(/<img class="(\w*?emoji) (\w*?emoji[^"]+?)" text="(.*?)_web" src=[^>]+>/g, (a, b, c, d) => {
+        if (replaceObj) return nullObjProp(replaceObj, [d], d)
+        else return d
+    })
+}
