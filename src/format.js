@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import * as convert from 'xml-js'
+import * as jsonio from './jsonio'
 
 export const decodeHTML = (string) => {
     if (typeof string !== 'string') return undefined
@@ -29,8 +30,9 @@ const htmlTagGen = (tag, content, href = undefined) => {
 }
 
 export const hashTagFormat = (tagName) => {
+    if (tagName === '') return ''
     if (!tagName) return 'NaN'
-    tagName = tagName.replace(/[\ |\.|\-|\|]/g, '_')
-    tagName = tagName.replace(/[\ |\!|\#|\$|\&|\'|\"|\(|\)|\*|\+|\,|\/|\\|\:|\;|\=|\?|\@\[|\]|\%|\^|\！|\？|\’|\‘|\“|\”|\，|\。|\（|\）|\【|\】]/g, '')
+    tagName = tagName.replace(/[\ |\.|\,|\-|\|]/g, '_')
+    tagName = tagName.replace(/[\ |\!|\#|\$|\&|\'|\"|\(|\)|\*|\+|\/|\\|\:|\;|\=|\?|\@\[|\]|\%|\^|\！|\？|\’|\‘|\“|\”|\，|\。|\（|\）|\【|\】]/g, '')
     return `#${tagName}`
 }
