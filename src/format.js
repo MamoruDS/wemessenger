@@ -3,11 +3,14 @@ import * as jsonio from './jsonio'
 export const decodeHTML = (string) => {
     if (typeof string !== 'string') return undefined
     return string
-        .replace(/&apos;/g, "'")
-        .replace(/&quot;/g, '"')
-        .replace(/&gt;/g, '>')
-        .replace(/&lt;/g, '<')
-        .replace(/&amp;/g, '&')
+    // .replace(/&apos;/g, "'")
+    // .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, '>')
+    .replace(/&lt;/g, '<')
+    .replace(/&amp;amp;/g, '&')
+    .replace(/&amp;/g, '&')
+    .replace(/\<br\s\/\>/g,'')
+    .replace(/\<br\/\>/g,'')
 }
 
 export const parseWechatURL = (text) => {
@@ -54,7 +57,7 @@ export const convertWechatEmoji = (msg, replaceObj = false) => {
             if (d.match(/\[.*\]/g)) {
                 return nullObjProp(replaceObj, [d], d)
             } else {
-                if (c==='emoji1f64d') c = 'emoji1f614' // a wechat emoji coding mistake, replace '🙍' with '😔'
+                if (c === 'emoji1f64d') c = 'emoji1f614' // a wechat emoji coding mistake, replace '🙍' with '😔'
                 return unicode2Emoji(`0x${c.replace(/emoji/,'')}`)
             }
         } else return d
