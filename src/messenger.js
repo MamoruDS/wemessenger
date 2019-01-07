@@ -9,6 +9,9 @@ import {
 const gm = require('gm').subClass({
     imageMagick: true
 })
+import {
+    FileBox
+} from 'file-box'
 
 let msgConflict = {}
 let telegramBots = {}
@@ -139,13 +142,23 @@ export const wechatMsgHandle = async (msg) => {
         // attachment & subscription & url-share
         const text = msg.text()
         console.log(text)
-        let textDecode = format.decodeHTML(text)
-        let url = textDecode
-            .replace(/(.*?\<url\>)/, '')
-            .replace(/(\<\/url\>.*)/, '')
-        if (url) {
-            dataInfo.msgData = format.parseWechatURL(text)
-            dataInfo.msgType = 'message'
+        const linkArray = format.getUrlsFromWechatAttachment(text)
+        if (linkArray) {
+            let coverPic = linkArray[0].cover
+            coverPic = FileBox.fromUrl(coverPic, 'cover.png')
+            dataInfo.msgData = await coverPic.toBuffer()
+            dataInfo.msgType = 'photo'
+            let inlinkKeyboard = []
+            for (let i in linkArray) {
+                // if (i === 0) { continue }
+                inlinkKeyboard = [...inlinkKeyboard, {
+                    text: linkArray[i].title,
+                    url: linkArray[i].url
+                }]
+            }
+            dataInfo.options.reply_markup = JSON.stringify({
+                "inline_keyboard": [inlinkKeyboard]
+            })
             callBot()
         } else {
             let file = await msg.toFileBox()
@@ -218,7 +231,8 @@ export const wechatMsgHandle = async (msg) => {
     } else if (msg.type() === main.messageType.Text) {
         // text message
         const text = format.convertWechatEmoji(msg.text(), true)
-        dataInfo.msgData = text
+        dataInfo.msgData = text.replace(/\<br\s\/\>/g, '\n')
+            .replace(/\<br\/\>/g, '\n')
         dataInfo.msgType = 'message'
         callBot()
     } else if (msg.type() === main.messageType.Video) {
