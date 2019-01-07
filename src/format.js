@@ -1,20 +1,22 @@
 import * as jsonio from './jsonio'
+const convert = require('xml-js')
 
-export const decodeHTML = (string) => {
+export const decodeXML = (string) => {
     if (typeof string !== 'string') return undefined
     return string
-    // .replace(/&apos;/g, "'")
-    // .replace(/&quot;/g, '"')
-    .replace(/&gt;/g, '>')
-    .replace(/&lt;/g, '<')
-    .replace(/&amp;amp;/g, '&')
-    .replace(/&amp;/g, '&')
-    .replace(/\<br\s\/\>/g,'')
-    .replace(/\<br\/\>/g,'')
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;amp;/g, '&')
+        .replace(/&amp;/g, '&')
+        .replace(/\<br\s\/\>/g, '')
+        .replace(/\<br\/\>/g, '')
+        .replace(/>"?(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*))"?</g, (a, b) => {
+            return `><![CDATA[${b}]]><`
+        })
 }
 
 export const parseWechatURL = (text) => {
-    text = decodeHTML(text)
+    text = decodeXML(text)
     let url = text
         .replace(/(.*?\<url\>)/, '')
         .replace(/(\<\/url\>.*)/, '')
