@@ -85,7 +85,7 @@ const unicode2Emoji = (code) => {
 /**
  * getUrlsFromWechatAttachment
  * @param {String} msgText
- * @returns {Array.<{url: String, title: String, cover: String}>} myObj
+ * @returns {Array.<{url: String, title: String, cover: String}>} linkObj with contain url, title & cover. return empty array if no link detected
  */
 export const getUrlsFromWechatAttachment = (msgText) => {
     let msgXml = decodeXML(msgText)
