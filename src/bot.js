@@ -13,11 +13,19 @@ const bot = new TelegramBot(token, {
     polling: true
 })
 
+bot.on('message', async (msg) => {
+    T2WMsg(msg)
+})
+
+process.on('message', async (msg) => {
+    W2TMsg(msg)
+})
+
 const msgRecord = (res, contactId) => {
     // TODO: record bot msg for reply
 }
 
-process.on('message', async (msg) => {
+const W2TMsg = (msg) => {
     const contactId = msg.contactId
     let data = msg.msgData
     let options = {}
@@ -88,4 +96,8 @@ process.on('message', async (msg) => {
     if (typeof data == 'string') {
         if (fs.existsSync(data)) fs.unlinkSync(data)
     }
-})
+}
+
+const T2WMsg = (msg) => {
+    process.send(msg)
+}
