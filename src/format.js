@@ -81,3 +81,35 @@ const unicode2Emoji = (code) => {
     })
     return JSON.parse(`["${c}"]`)[0]
 }
+
+/**
+ * getUrlsFromWechatAttachment
+ * @param {String} msgText
+ * @returns {Array.<{url: String, title: String, cover: String}>} myObj
+ */
+export const getUrlsFromWechatAttachment = (msgText) => {
+    let msgXml = decodeXML(msgText)
+    let msgObj = convert.xml2js(msgXml, {
+        compact: true
+    })
+    let linkArray = []
+    let itemArray = nullObjProp(msgObj, ['msg', 'appmsg', 'mmreader', 'category', 'item'], undefined)
+    if (!itemArray) {
+        let singleItem = {
+            url: nullObjProp(msgObj, ['msg', 'appmsg', 'url', '_cdata'], undefined),
+            title: nullObjProp(msgObj, ['msg', 'appmsg', 'title', '_text'], undefined),
+            cover: nullObjProp(msgObj, ['msg', 'appmsg','thumburl', '_cdata'], undefined)
+        }
+        if (singleItem.url && singleItem.title && singleItem.cover) linkArray = [...linkArray, singleItem]
+        return linkArray
+    }
+    // for (let item of msgObj.msg.appmsg.mmreader.category.item) {
+    for (let item of itemArray) {
+        let itemInfo = {}
+        itemInfo.url = item.url['_cdata']
+        itemInfo.title = item.title['_cdata']
+        itemInfo.cover = item.cover['_cdata']
+        linkArray = [...linkArray, itemInfo]
+    }
+    return linkArray
+}
