@@ -59,7 +59,7 @@ export const setSelf = (info = {
         setContactUser(self.contactId, {
             tempId: self.wechatId,
             bindTelegramId: self.telegramId,
-            publicBool: false
+            isPublic: false
         })
     }
 }
@@ -84,14 +84,9 @@ export const setBot = (botId, mode, token) => {
     setProfile(_profile)
 }
 
-export const getDefaultBotId = () => {
-    let _profile = getProfile()
-    let bots = _profile.bots
-    // let bot = undefined
-    for (let i in bots) {
-        if (bots[i].isDefault) return i
-    }
-    // return bot
+export const getDefaultBotId = (isPublic) => {
+    const _links = getLinks()
+    return isPublic ? _links['defaultP'] ? _links['defaultP'] : _links['defaultN'] : _links['defaultN']
 }
 
 export const getContact = (contactId) => {
@@ -106,7 +101,7 @@ export const setContactUser = (contactId, info = {
     bindTelegramId: undefined,
     bindChatId: undefined,
     mute: undefined,
-    publicBool: undefined
+    isPublic: undefined
 }) => {
     let _profile = getProfile()
     let item = _profile.contacts[contactId] || {}
@@ -117,8 +112,8 @@ export const setContactUser = (contactId, info = {
     item = objUpdate(item, 'bindTelegramId', info.bindTelegramId)
     item = objUpdate(item, 'bindChatId', info.bindChatId)
     item = objUpdate(item, 'mute', info.mute)
-    item = objUpdate(item, 'roomBool', false)
-    item = objUpdate(item, 'publicBool', info.publicBool)
+    item = objUpdate(item, 'isRoom', false)
+    item = objUpdate(item, 'isPublic', info.isPublic)
     //TODO: log
     _profile.contacts[contactId] = item
     setProfile(_profile)
@@ -146,7 +141,7 @@ export const setContactRoom = (contactId, info = {
     item = objUpdate(item, 'bindChatId', info.bindChatId)
     item = objUpdate(item, 'mention', info.mention)
     item = objUpdate(item, 'mute', info.mute)
-    item = objUpdate(item, 'roomBool', true)
+    item = objUpdate(item, 'isRoom', true)
     //TODO: log
     _profile.contacts[contactId] = item
     setProfile(_profile)
@@ -243,13 +238,11 @@ export const checkLocalContact = (wechatId, updateInfo, info = {
         if (contactId) {
             if (updateInfo) {
                 if (info.name || info.alias) {
-                    console.log('update user')
                     setContactUser(contactId, {
                         name: info.name,
                         alias: info.alias
                     })
                 } else {
-                    console.log('update room')
                     setContactRoom(contactId, {
                         topic: info.topic
                     })
@@ -310,7 +303,7 @@ export const getContactIdByWechatInfo = (wechatId, wechatInfo = {
                 tempId: wechatId,
                 name: wechatInfo.wechatName,
                 alias: wechatInfo.wechatAlias,
-                publicBool: (wechatInfo.wechatType === 1) ? false : true,
+                isPublic: (wechatInfo.wechatType === 1) ? false : true,
                 mute: false
             })
         }

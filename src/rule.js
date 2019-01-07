@@ -28,63 +28,6 @@ const getSelfChatId = () => {
     return profile.getSelf().telegramId
 }
 
-export const getTelegramMessengerBot = (userId, roomId, isSelf) => {
-    const isRoom = roomId ? true : false
-    const userBot = getLinkByWechatContact(userId)
-    const roomBot = getLinkByWechatContact(roomId)
-    const userInfo = getUserInfo(userId)
-    const roomInfo = getRoomInfo(roomId)
-    let res = {
-        botId: undefined,
-        chatId: getSelfChatId(),
-        muted: false,
-        prefix: messagePrefix(isSelf, userInfo, userBot, roomInfo, roomBot, {
-            enableHashTag: true,
-            tagUserBy: 'alias',
-            selfAlias: 'you(wechat)',
-            spaceReplace: '.'
-        })
-    }
-    if (isRoom) {
-        if (roomInfo.mute) {
-            res.muted = true
-        } else if (roomInfo.mode === 'blacklist') {
-            if (roomInfo.blacklist.indexOf(userId) !== -1) {
-                res.muted = true
-            }
-        } else if (roomInfo.mode === 'whitelist') {
-            if (roomInfo.blacklist.indexOf(userId) === -1) {
-                res.muted = true
-            }
-        }
-        if (roomBot) {
-            if (roomInfo.bindChatId) {
-                if (userBot) {
-                    res.botId = userBot
-                    res.chatId = roomInfo.bindChatId
-                    // TODO: if userBot not in group getChatMembersCount
-                } else {
-                    res.botId = roomBot
-                    res.chatId = roomInfo.bindChatId
-                }
-            } else {
-                res.botId = roomBot
-            }
-        } else {
-            res.botId = getDefaultBotId()
-        }
-    } else {
-        if (userBot) {
-            res.botId = userBot
-            res = profile.objUpdate(res, 'chatId', userInfo.bindChatId)
-        } else {
-            res.botId = getDefaultBotId()
-        }
-    }
-    console.log(res)
-    return res
-}
-
 const getDefaultBotId = () => {
     return profile.getDefaultBotId()
 }
@@ -96,36 +39,6 @@ const getRoomInfo = (roomId) => {
 
 const getUserInfo = (userId) => {
     return profile.getContact(userId)
-}
-
-const messagePrefix = (isSelf, chatInfo, chatBot, roomInfo, roomBot, options = {
-    tagUserBy: 'alias',
-    selfAlias: 'you_wechat'
-}) => {
-    // chat(user) should be 'self' 
-    const hasChatBot = chatBot ? true : false
-    const isRoom = roomInfo ? true : false
-    const hasRoomBot = roomBot ? true : false
-    let userTag = undefined
-    let roomTag = undefined
-
-    if (isSelf) {
-        userTag = format.hashTagFormat(options.selfAlias)
-    } else {
-        // TODO: support group alias
-        userTag = chatInfo[options.tagUserBy]
-    }
-    if (roomInfo) {
-        roomTag = format.hashTagFormat(roomInfo.topic)
-    } else {
-        roomTag = ''
-    }
-
-    let prefixWho = ''
-    let prefixWhere = ''
-    if (!hasChatBot || isRoom) prefixWho = `${userTag} `
-    if (isRoom && !hasRoomBot) prefixWhere = `@ ${roomTag}`
-    return `${prefixWho}${prefixWhere}`
 }
 
 export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
@@ -171,7 +84,7 @@ export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
     }
     res.prefix = genMessagePrefix(res.botId, res.bindChatId, isSelf, prefix)
     if (!res.bindChatId) res.bindChatId = getSelfChatId()
-    if (!res.botId) res.botId = getDefaultBotId()
+    if (!res.botId) res.botId = getDefaultBotId(userInfo.isPublic)
     // console.log(res)
     return res
 }
