@@ -1,5 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api')
 import * as fs from 'fs'
+import * as msgHistory from './msgHistory'
 
 const token = process.argv[2]
 const botId = process.argv[3]
@@ -23,6 +24,7 @@ process.on('message', async (msg) => {
 
 const msgRecord = (res, contactId) => {
     // TODO: record bot msg for reply
+    msgHistory.recordMsg(botId, res.message_id, res.date, contactId)
 }
 
 const W2TMsg = (msg) => {
@@ -70,9 +72,16 @@ const W2TMsg = (msg) => {
                 })
             break
         case 'sticker':
-            bot.sendSticker(msg.chatId, data, options, fileOptions).then((res) => {
-                msgRecord(res, contactId)
-            })
+            bot.sendSticker(msg.chatId, data, options, fileOptions)
+                .then((res) => {
+                    msgRecord(res, contactId)
+                    if (prefix) {
+                        options.reply_to_message_id = res.message_id
+                        bot.sendMessage(msg.chatId, `${prefix} <i>sent this</i>`, options, fileOptions).then((res) => {
+                            msgRecord(res, contactId)
+                        })
+                    }
+                })
             break
         case 'video':
             bot.sendVideo(msg.chatId, data, options, fileOptions).then((res) => {
