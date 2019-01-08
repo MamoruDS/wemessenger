@@ -84,7 +84,8 @@ export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
     }
     res.prefix = genMessagePrefix(res.botId, res.bindChatId, isSelf, prefix)
     if (!res.bindChatId) res.bindChatId = getSelfChatId()
-    if (!res.botId) res.botId = getDefaultBotId(userInfo.isPublic)
+    const isPublicMsg = userInfo ? userInfo.isPublic ? true : false : false
+    if (!res.botId) res.botId = getDefaultBotId(isPublicMsg)
     // console.log(res)
     return res
 }
