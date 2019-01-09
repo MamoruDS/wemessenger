@@ -26,12 +26,9 @@ export const initBots = () => {
 const spawnBot = (botId) => {
     const info = profile.getBot(botId)
     if (info.token) {
-        const bot = fork('dist/bot.js', [info.token, botId])
+        const bot = fork('dist/bot.js', ['--token', info.token, '--id', botId, info.keepPolling ? '--polling' : ''])
         bot.on('message', (msg) => {
-            // TODO: receive message from telegram bot
-            if (msg.from.id == profile.getSelf().telegramId) {
-                telegramMsgHandle(msg)
-            }
+            telegramMsgHandle(msg)
         })
         bot.on('exit', () => {
             telegramBots[botId] = 'shutdown'
@@ -49,14 +46,19 @@ const killBot = (botId) => {
     }
 }
 
-const commandBot = (botId, chatId, contactId, prefixStr, dataInfo = {
+const commandBot = (preMsg, botId, chatId, contactId, prefixStr, dataInfo = {
     msgData: undefined,
     msgType: undefined,
     options: {}
 }) => {
-    const bot = telegramBots[botId]
+    const bot = telegramBots[botId[0]]
     if (bot) {
+        if (preMsg) {
+            bot.send(preMsg)
+            return
+        }
         let msg = {
+            botId: botId,
             chatId: chatId,
             contactId: contactId,
             msgData: undefined,
@@ -109,6 +111,7 @@ const getTelegramBotByMessage = (msg) => {
             wechatAlias: msg.from().payload.alias,
             wechatType: msg.from().payload.type
         })
+        recvId = profile.getSelf().contactId
     }
     if (msg.room()) {
         roomId = profile.getContactIdByWechatInfo(msg.room().id, {
@@ -123,6 +126,8 @@ const getTelegramBotByMessage = (msg) => {
 
 export const wechatMsgHandle = async (msg) => {
     // TODO: improve wechatMsgHandle return a Promise
+    console.log('=========')
+    console.log(msg)
     if (await checkConflict(msg)) return
     const messenger = getTelegramBotByMessage(msg)
     const messengerId = messenger.botId
@@ -136,12 +141,11 @@ export const wechatMsgHandle = async (msg) => {
         options: {}
     }
     const callBot = () => {
-        commandBot(messengerId, bindChatId, contactId, prefixStr, dataInfo)
+        commandBot(undefined, messengerId, bindChatId, contactId, prefixStr, dataInfo)
     }
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
         const text = msg.text()
-        console.log(text)
         const linkArray = format.getUrlsFromWechatAttachment(text)
         if (linkArray) {
             let coverPic = linkArray[0].cover
@@ -230,10 +234,15 @@ export const wechatMsgHandle = async (msg) => {
         }
     } else if (msg.type() === main.messageType.Text) {
         // text message
-        const text = format.convertWechatEmoji(msg.text(), true)
-        dataInfo.msgData = text.replace(/\<br\s\/\>/g, '\n')
-            .replace(/\<br\/\>/g, '\n')
-        dataInfo.msgType = 'message'
+        if (msg.payload.filename.match(/\.10000$/)) {
+            dataInfo.msgData = profile.getRedEnvelopeStickerFileId()
+            dataInfo.msgType = 'sticker'
+        } else {
+            const text = format.convertWechatEmoji(msg.text(), true)
+            dataInfo.msgData = text.replace(/\<br\s\/\>/g, '\n')
+                .replace(/\<br\/\>/g, '\n')
+            dataInfo.msgType = 'message'
+        }
         callBot()
     } else if (msg.type() === main.messageType.Video) {
         // video message
@@ -257,7 +266,20 @@ export const wechatMsgHandle = async (msg) => {
 }
 
 export const telegramMsgHandle = async (msg) => {
-    console.log(msg)
+    if (msg.from) {
+        console.log(`\n[INFO] Message from user ${msg.from.id}`)
+    }
+    if (msg.chat) {
+        console.log(`[INFO] Message from chat ${msg.chat.id}`)
+    }
+    if (msg.code === 'ETELEGRAM') {
+        if (msg.retry) {
+            commandBot(msg.msg, msg.msg.botId)
+        }
+    }
+    // if (msg.from.id == profile.getSelf().telegramId) {
+    // TODO: handle telegramMsg
+    // }
 }
 
 const setMsgConflict = (id, type, content) => {
