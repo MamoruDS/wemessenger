@@ -29,7 +29,7 @@ export const parseWechatURL = (text) => {
     return `${htmlTagGen('b',title)} ${htmlTagGen('a','click',url)}\n${describe}`
 }
 
-const htmlTagGen = (tag, content, href = undefined) => {
+export const htmlTagGen = (tag, content, href = undefined) => {
     return `<${tag}${href ? ` href="${href}"` : ""}>${content}</${tag}>`
 }
 
@@ -98,9 +98,11 @@ export const getUrlsFromWechatAttachment = (msgText) => {
         let singleItem = {
             url: nullObjProp(msgObj, ['msg', 'appmsg', 'url', '_cdata'], undefined),
             title: nullObjProp(msgObj, ['msg', 'appmsg', 'title', '_text'], undefined),
-            cover: nullObjProp(msgObj, ['msg', 'appmsg','thumburl', '_cdata'], undefined)
+            describe: nullObjProp(msgObj, ['msg', 'appmsg', 'des', '_text'], undefined),
+            cover: nullObjProp(msgObj, ['msg', 'appmsg','thumburl', '_cdata'], undefined),
+            source: nullObjProp(msgObj, ['msg', 'appinfo','appname', '_text'], undefined)
         }
-        if (singleItem.url && singleItem.title && singleItem.cover) linkArray = [...linkArray, singleItem]
+        if (singleItem.url && singleItem.title) linkArray = [...linkArray, singleItem]
         return linkArray
     }
     // for (let item of msgObj.msg.appmsg.mmreader.category.item) {
