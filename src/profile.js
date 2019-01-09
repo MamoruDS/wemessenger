@@ -331,3 +331,18 @@ export const getOptions = () => {
     let _profile = getProfile()
     return _profile.options
 }
+
+export const getRedEnvelopeStickerFileId = () => {
+    let _options = getOptions()
+    return _options['redEnvelopeStickerFileId']
+}
+
+export const getWechatStickerStickerFileId = () => {
+    let _options = getOptions()
+    return _options['redEnvelopeStickerFileId']
+}
+
+export const getTransferStickerFileId = () => {
+    let _options = getOptions()
+    return _options['redEnvelopeStickerFileId']
+}
