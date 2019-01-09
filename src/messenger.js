@@ -149,19 +149,28 @@ export const wechatMsgHandle = async (msg) => {
         const linkArray = format.getUrlsFromWechatAttachment(text)
         if (linkArray) {
             let coverPic = linkArray[0].cover
-            coverPic = FileBox.fromUrl(coverPic, 'cover.png')
-            dataInfo.msgData = await coverPic.toBuffer()
-            dataInfo.msgType = 'photo'
-            let inlinkKeyboard = []
+            const hasCoverPic = coverPic ? true : false
+            if (hasCoverPic) {
+                coverPic = FileBox.fromUrl(coverPic, 'cover.png')
+                dataInfo.msgData = await coverPic.toBuffer()
+                dataInfo.msgType = 'photo'
+            } else {
+                // TODO: add describe? (linkArray[i].describe
+                const linkSource = linkArray[0].source ? `\nshared from ${linkArray[0].source}` : ''
+                dataInfo.msgData = `${format.htmlTagGen('a',linkArray[0].title,linkArray[0].url)}${linkSource}`
+                dataInfo.msgType = 'message'
+            }
+            let inlineKeyboard = []
             for (let i in linkArray) {
-                // if (i === 0) { continue }
-                inlinkKeyboard = [...inlinkKeyboard, {
-                    text: linkArray[i].title,
-                    url: linkArray[i].url
-                }]
+                if (i !== 0 && linkArray.length !== 1) {
+                    inlineKeyboard = [...inlineKeyboard, {
+                        text: linkArray[i].title,
+                        url: linkArray[i].url
+                    }]
+                }    
             }
             dataInfo.options.reply_markup = JSON.stringify({
-                "inline_keyboard": [inlinkKeyboard]
+                "inline_keyboard": [inlineKeyboard]
             })
             callBot()
         } else {
