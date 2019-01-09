@@ -43,17 +43,20 @@ const getUserInfo = (userId) => {
 
 export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
     let res = {
-        botId: undefined,
+        botId: [],
         bindChatId: undefined,
         contactId: undefined,
         muted: false,
-        prefix: undefined
+        prefix: []
     }
     let prefix = {
         sendInfo: getUserInfo(sendId),
         recvInfo: getUserInfo(recvId),
         roomInfo: undefined
     }
+    let sendBot = prefix.sendInfo ? getLinkByWechatContact(sendId) : undefined
+    if (isSelf && !roomId) sendBot = undefined
+    if (sendBot) res.botId = [sendBot, ...res.botId]
     const userId = isSelf ? recvId : sendId
     const userBot = getLinkByWechatContact(userId)
     const userInfo = getUserInfo(userId)
@@ -70,27 +73,31 @@ export const getTelegramMessengerBotRe = (sendId, recvId, roomId, isSelf) => {
         } else if (roomInfo.mode === 'whitelist' && roomInfo.whitelist.indexOf(userId) === -1) {
             res.muted = true
         }
-        if (roomBot) res.botId = roomBot
+        if (roomBot) res.botId = [...res.botId, roomBot]
         if (roomInfo.bindChatId) res.bindChatId = roomInfo.bindChatId
     } else {
         if (userInfo.mute) {
             res.muted = true
         }
         if (userBot) {
-            res.botId = userBot
+            res.botId = [...res.botId, userBot]
             res = profile.objUpdate(res, 'bindChatId', userInfo.bindChatId)
         }
         if (userInfo.bindChatId) res.bindChatId = userInfo.bindChatId
     }
-    res.prefix = genMessagePrefix(res.botId, res.bindChatId, isSelf, prefix)
-    if (!res.bindChatId) res.bindChatId = getSelfChatId()
     const isPublicMsg = userInfo ? userInfo.isPublic ? true : false : false
-    if (!res.botId) res.botId = getDefaultBotId(isPublicMsg)
-    // console.log(res)
+    if (res.botId.length > 0) {
+        for (let botIndex in res.botId) {
+            res.prefix[botIndex] = genMessagePrefix(res.botId[botIndex], res.bindChatId, sendBot, isSelf, prefix)
+        }
+    }
+    res.prefix = [...res.prefix, genMessagePrefix(undefined, res.bindChatId, undefined, isSelf, prefix)]
+    res.botId = [...res.botId, getDefaultBotId(isPublicMsg)]
+    if (!res.bindChatId) res.bindChatId = getSelfChatId()
     return res
 }
 
-const genMessagePrefix = (hasChatBot, hasBindChat, isSelf = false, fieldInfo = {
+const genMessagePrefix = (hasChatBot, hasBindChat, hasSendBot, isSelf = false, fieldInfo = {
     sendInfo: undefined,
     recvInfo: undefined,
     roomInfo: undefined
@@ -111,7 +118,13 @@ const genMessagePrefix = (hasChatBot, hasBindChat, isSelf = false, fieldInfo = {
     recvTag = recvTag ? ` <code>to</code> ${recvTag}` : recvTag
     roomTag = roomTag ? `<b>${roomTag}</b>` : roomTag
     roomTag = roomTag ? ` <code class='123'>@</code> ${roomTag}` : roomTag
-    if (hasBindChat || hasChatBot) {
+    if (hasSendBot) {
+        if (hasBindChat) {
+            return ``
+        } else {
+            return `${roomTag}`
+        }
+    } else if (hasBindChat || hasChatBot) {
         return `${sendTag}`
     } else {
         return `${sendTag}${recvTag}${roomTag}`
