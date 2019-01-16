@@ -1,11 +1,8 @@
 import * as profile from './profile'
 import * as messenger from './messenger'
-import * as colors from 'colors'
 
 const qrTerm = require('qrcode-terminal')
 const {
-    Contact,
-    log,
     Wechaty,
 } = require('wechaty')
 
@@ -26,6 +23,13 @@ export const messageType = {
     Text: bot.Message.Type.Text,
     Video: bot.Message.Type.Video,
     Url: bot.Message.Type.Url
+}
+
+export const getWechatyContactByFilter = async (contactFilter) => {
+    if (!contactFilter) contactFilter = {
+        alias: 'mamoru-test'
+    }
+    return await bot.Contact.find(contactFilter)
 }
 
 const onScan = (qrcode, status) => {
