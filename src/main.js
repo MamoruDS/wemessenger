@@ -27,7 +27,7 @@ export const messageType = {
 
 export const getWechatyContactByFilter = async (contactFilter) => {
     if (!contactFilter) contactFilter = {
-        alias: 'mamoru-test'
+        // TODO:
     }
     return await bot.Contact.find(contactFilter)
 }

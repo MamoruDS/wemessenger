@@ -141,8 +141,14 @@ export const wechatMsgHandle = async (msg) => {
         options: {}
     }
     const callBot = () => {
-        commandBot(undefined, messengerId, bindChatId, contactId, prefixStr, dataInfo)
+        const modifiedPrefixStr = format.convertWechatEmoji(prefixStr)
+        dataInfo.msgData = format.convertWechatEmoji(dataInfo.msgData)
+        commandBot(undefined, messengerId, bindChatId, contactId, modifiedPrefixStr, dataInfo)
     }
+
+    // let file = await msg.toFileBox()
+    // console.log(file)
+
     if (msg.type() === main.messageType.Attachment) {
         // attachment & subscription & url-share
         const text = msg.text()
@@ -150,27 +156,36 @@ export const wechatMsgHandle = async (msg) => {
         if (linkArray) {
             let coverPic = linkArray[0].cover
             const hasCoverPic = coverPic ? true : false
+            let inlineKeyboard = []
             if (hasCoverPic) {
                 coverPic = FileBox.fromUrl(coverPic, 'cover.png')
                 dataInfo.msgData = await coverPic.toBuffer()
                 dataInfo.msgType = 'photo'
+                if (linkArray.length === 1) {
+                    inlineKeyboard = [
+                        [{
+                            text: linkArray[0].title,
+                            url: linkArray[0].url
+                        }]
+                    ]
+                }
             } else {
                 // TODO: add describe? (linkArray[i].describe
+                const linkDescribe = linkArray[0].describe ? `\n${linkArray[0].describe}` : ''
                 const linkSource = linkArray[0].source ? `\nshared from ${linkArray[0].source}` : ''
-                dataInfo.msgData = `${format.htmlTagGen('a',linkArray[0].title,linkArray[0].url)}${linkSource}`
+                dataInfo.msgData = `${format.htmlTagGen('a',linkArray[0].title,linkArray[0].url)}${linkDescribe}${linkSource}`
                 dataInfo.msgType = 'message'
             }
-            let inlineKeyboard = []
             for (let i in linkArray) {
                 if (i !== 0 && linkArray.length !== 1) {
-                    inlineKeyboard = [...inlineKeyboard, {
+                    inlineKeyboard = [...inlineKeyboard, [{
                         text: linkArray[i].title,
                         url: linkArray[i].url
-                    }]
-                }    
+                    }]]
+                }
             }
             dataInfo.options.reply_markup = JSON.stringify({
-                "inline_keyboard": [inlineKeyboard]
+                "inline_keyboard": inlineKeyboard
             })
             callBot()
         } else {
@@ -246,6 +261,12 @@ export const wechatMsgHandle = async (msg) => {
         if (msg.payload.filename.match(/\.10000$/)) {
             dataInfo.msgData = profile.getRedEnvelopeStickerFileId()
             dataInfo.msgType = 'sticker'
+        } else if (msg.payload.filename.match(/微信转账\.1$/)) {
+            dataInfo.msgData = profile.getTransferStickerFileId()
+            dataInfo.msgType = 'sticker'
+        } else if (msg.text() === '[send an emoji, please check on the phone]' || msg.text() === '[Send an emoji, view it on mobile]') {
+            dataInfo.msgData = profile.getWechatStickerStickerFileId()
+            dataInfo.msgType = 'sticker'
         } else {
             const text = format.convertWechatEmoji(msg.text(), true)
             dataInfo.msgData = text.replace(/\<br\s\/\>/g, '\n')
@@ -284,6 +305,30 @@ export const telegramMsgHandle = async (msg) => {
     if (msg.code === 'ETELEGRAM') {
         if (msg.retry) {
             commandBot(msg.msg, msg.msg.botId)
+        }
+    } else if (msg.pending) {
+        const wechatyContact = main.getWechatyContactByFilter()
+        const fileLink = msg.fileLink
+        if (fileLink) {
+            let file = await FileBox.fromUrl(fileLink, msg.specName)
+            if (msg.type === 'sticker') {
+                const fileBuf = await file.toBuffer()
+                gm(fileBuf).toBuffer('gif', async (err, buffer) => {
+                    if (err) console.error(err)
+                    file = await FileBox.fromBuffer(buffer, msg.specName)
+                    wechatyContact.say(file)
+                })
+            } else if (msg.type === 'photo') {
+                wechatyContact.say(file)
+            } else if (msg.type === 'animation') {
+                wechatyContact.say(file)
+            } else if (msg.type === 'video') {
+                // TODO:
+            } else if (msg.type === 'voice') {
+                // TODO:
+            }
+        }else{
+            wechatyContact.say(msg.text)
         }
     }
     // if (msg.from.id == profile.getSelf().telegramId) {
