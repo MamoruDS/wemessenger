@@ -28,8 +28,8 @@ const getSelfChatId = () => {
     return profile.getSelf().telegramId
 }
 
-const getDefaultBotId = () => {
-    return profile.getDefaultBotId()
+const getDefaultBotId = (isPublicMsg) => {
+    return profile.getDefaultBotId(isPublicMsg)
 }
 
 const getRoomInfo = (roomId) => {
